@@ -105,8 +105,12 @@ if [ "$distro" = "$ubuntu" ]; then
 	git config --global core.excludesfile ~/.gitignore
 	
 
-	# The items below are customizations for a generic Drupal installation
-	echo Customizing default LAMP for Drupal installation.
+	# The items below are customizations for a Drupal dev/stage/prod installation
+	echo Customizing default LAMP for Drupal dev/stage/prod installation.
+	
+	sudo sh -c 'echo "127.0.0.1 dev"   >> /etc/hosts'
+	sudo sh -c 'echo "127.0.0.1 prod"  >> /etc/hosts'
+	sudo sh -c 'echo "127.0.0.1 stage" >> /etc/hosts'
 
 	sudo a2enmod rewrite
 	sudo apache2ctl restart
@@ -134,9 +138,12 @@ if [ "$distro" = "$ubuntu" ]; then
 	git clone http://github.com/kurthill4/d8 $HOME/web-projects/stage
 	git clone http://github.com/kurthill4/d8 $HOME/web-projects/prod
 
-	$HOME/web-projects/dev/composer   update
-	$HOME/web-projects/stage/composer update
-	$HOME/web-projects/prod\composer  update
+	pushd .
+	cd $HOME/web-projects/dev;   composer update
+	cd $HOME/web-projects/stage; composer update
+	cd $HOME/web-projects/prod;  composer update
+	popd
+
 
 	#Get drush and drupal via composer...
 	#wget https://ftp.drupal.org/files/projects/drupal-8.2.7.tar.gz
