@@ -111,13 +111,33 @@ if [ "$distro" = "$ubuntu" ]; then
 	sudo a2enmod rewrite
 	sudo apache2ctl restart
 	
-	
 	wget https://ftp.drupal.org/files/projects/drupal-8.2.7.tar.gz
 	wget https://getcomposer.org/installer
 
-	
 	sudo php ./installer --install-dir=/usr/local/bin --filename=composer
 	
+	sudo cp -i 101-dev.conf   /etc/apache2/sites-available
+	sudo cp -i 102-stage.conf /etc/apache2/sites-available
+	sudo cp -i 103-prod.conf  /etc/apache2/sites-available
+		
+	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/101-dev.conf
+	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/102-stage.conf
+	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/103-prod.conf
+	sudo a2ensite 101-dev.conf
+	sudo a2ensite 102-stage.conf
+	sudo a2ensite 103-prod.conf
+	sudo service apache2 reload
+	
+	mkdir $HOME/web-projects
+
+	git clone http://github.com/kurthill4/d8 $HOME/web-projects/dev
+	git clone http://github.com/kurthill4/d8 $HOME/web-projects/stage
+	git clone http://github.com/kurthill4/d8 $HOME/web-projects/prod
+
+	$HOME\web-projects\dev\composer   update
+	$HOME\web-projects\stage\composer update
+	$HOME\web-projects\prod\composer  update
+
 	#Get drush and drupal via composer...
 	#wget http://files.drush.org/drush.phar
 	#tar -xvf drupal-8.2.7.tar.gz
