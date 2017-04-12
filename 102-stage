@@ -1,0 +1,13 @@
+<VirtualHost *:80>
+  ServerAdmin webmaster@localhost
+  ServerName stage
+
+  DocumentRoot /$HOME/web-projects/stage/web
+  
+  <Directory />
+    Options FollowSymLinks
+    AllowOverride All
+    Require all granted
+  </Directory>
+</VirtualHost>
+
