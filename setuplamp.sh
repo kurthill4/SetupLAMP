@@ -65,6 +65,14 @@ while [ "$1" != "" ]; do
 		-? | --help )	showhelp
 						;;
 
+		--d8user )		shift
+						d8user=$1
+						;;
+
+		--d8password )	shift
+						d8password=$1
+						;;
+
 
 	esac
 	shift
@@ -80,9 +88,20 @@ if ["$dbpwd" = ""]; then
 	exit 2
 fi
 
-clear
+if ["$d8user" = ""]; then
+	echo no user!
+	d8user="drupal"
+fi
 
-if [ "$distro" = "$ubuntu" ]; then
+if ["$d8password" = ""]; then
+	d8password="password"
+fi
+
+echo D8 User: $d8user, password: $d8password
+
+
+function ubuntu_install_packages()
+{
 	echo Setting up CIFS...
 	sudo apt-get install -y samba
 
@@ -95,6 +114,11 @@ if [ "$distro" = "$ubuntu" ]; then
 	sudo apt-get install -y mysql-server mysql-client
 	sudo apt-get install -y apache2 libapache2-mod-php7.0
 	sudo apt-get install -y git subversion
+
+}
+
+function configure_git
+{
 	git config --global --bool core.autocrlf false
 	git config --global --bool core.safecrlf false
 	git config --global --bool core.ignorecase false
@@ -103,8 +127,10 @@ if [ "$distro" = "$ubuntu" ]; then
 	git config --global diff.renames copies
 	git config --global alias.a "apply --index"
 	git config --global core.excludesfile ~/.gitignore
-	
+}
 
+function configure_apache()
+{
 	# The items below are customizations for a Drupal dev/stage/prod installation
 	echo Customizing default LAMP for Drupal dev/stage/prod installation.
 	
@@ -113,13 +139,7 @@ if [ "$distro" = "$ubuntu" ]; then
 	sudo sh -c 'echo "127.0.0.1 stage" >> /etc/hosts'
 
 	sudo a2enmod rewrite
-	sudo apache2ctl restart
-	
-	wget https://getcomposer.org/installer
 
-	sudo php ./installer --install-dir=/usr/local/bin --filename=composer
-	rm installer
-	
 	sudo cp -i 101-dev.conf   /etc/apache2/sites-available
 	sudo cp -i 102-stage.conf /etc/apache2/sites-available
 	sudo cp -i 103-prod.conf  /etc/apache2/sites-available
@@ -127,11 +147,25 @@ if [ "$distro" = "$ubuntu" ]; then
 	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/101-dev.conf
 	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/102-stage.conf
 	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/103-prod.conf
+
 	sudo a2ensite 101-dev.conf
 	sudo a2ensite 102-stage.conf
 	sudo a2ensite 103-prod.conf
-	sudo service apache2 reload
-	
+
+	sudo apache2ctl restart
+}	
+
+function install_composer()
+{
+	wget https://getcomposer.org/installer
+
+	sudo php ./installer --install-dir=/usr/local/bin --filename=composer
+	rm installer
+}	
+
+
+function configure_project_dirs()
+{
 	mkdir $HOME/web-projects
 
 	git clone http://github.com/kurthill4/d8 $HOME/web-projects/dev
@@ -139,10 +173,46 @@ if [ "$distro" = "$ubuntu" ]; then
 	git clone http://github.com/kurthill4/d8 $HOME/web-projects/prod
 
 	pushd .
-	cd $HOME/web-projects/dev;   composer update
+	cd $HOME/web-projects/dev;   composer update;
 	cd $HOME/web-projects/stage; composer update
 	cd $HOME/web-projects/prod;  composer update
 	popd
+
+}
+
+function configure_drupal_settings()
+{
+	sed "s|\$d8database|d8dev|" settings.php > $HOME/web-projects/dev/web/sites/default/settings.php
+	sed "s|\$d8database|d8prod|" settings.php > $HOME/web-projects/prod/web/sites/default/settings.php
+	sed "s|\$d8database|d8stage|" settings.php > $HOME/web-projects/stage/web/sites/default/settings.php
+
+	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/dev/web/sites/default/settings.php
+	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/prod/web/sites/default/settings.php
+	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/stage/web/sites/default/settings.php
+
+	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/dev/web/sites/default/settings.php
+	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/prod/web/sites/default/settings.php
+	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/stage/web/sites/default/settings.php
+}
+
+if [ "$distro" = "$ubuntu" ]; then
+
+	ubuntu_install_packages
+	configure_git
+	configure_apache
+	install_composer
+	configure_project_dirs
+	configure_drupal_settings
+
+	echo
+	echo Restoring databases from initial state.  $dbpwd
+	sed "s|\$d8user|${d8user}|" createdb.sql > cdb.sql
+	sed -i "s|\$d8password|${d8password}|" cdb.sql
+	
+	mysql -u root --password=$dbpwd < cdb.sql
+	gunzip -c 2017-04-12-d8dev-0.sql.gz | mysql -u root --password=$dbpwd d8dev
+	gunzip -c 2017-04-12-d8dev-0.sql.gz | mysql -u root --password=$dbpwd d8prod
+	gunzip -c 2017-04-12-d8dev-0.sql.gz | mysql -u root --password=$dbpwd d8stage
 
 
 	#Get drush and drupal via composer...
