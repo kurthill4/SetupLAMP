@@ -72,6 +72,10 @@ while [ "$1" != "" ]; do
 		--d8password )	shift
 						d8password=$1
 						;;
+	
+		--skipLAMP )	shift
+						skipLAMP="Y"
+						;;
 
 
 	esac
@@ -173,9 +177,9 @@ function configure_project_dirs()
 	git clone http://github.com/kurthill4/d8 $HOME/web-projects/prod
 
 	pushd .
-	cd $HOME/web-projects/dev;   composer update;
-	cd $HOME/web-projects/stage; composer update
-	cd $HOME/web-projects/prod;  composer update
+	cd $HOME/web-projects/dev;   composer install
+	cd $HOME/web-projects/stage; composer install
+	cd $HOME/web-projects/prod;  composer install
 	popd
 
 }
@@ -195,15 +199,8 @@ function configure_drupal_settings()
 	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/stage/web/sites/default/settings.php
 }
 
-if [ "$distro" = "$ubuntu" ]; then
-
-	ubuntu_install_packages
-	configure_git
-	configure_apache
-	install_composer
-	configure_project_dirs
-	configure_drupal_settings
-
+function restoreDatabases()
+{
 	echo
 	echo Restoring databases from initial state.  $dbpwd
 	sed "s|\$d8user|${d8user}|" createdb.sql > cdb.sql
@@ -213,7 +210,27 @@ if [ "$distro" = "$ubuntu" ]; then
 	gunzip -c 2017-04-12-d8dev-0.sql.gz | mysql -u root --password=$dbpwd d8dev
 	gunzip -c 2017-04-12-d8dev-0.sql.gz | mysql -u root --password=$dbpwd d8prod
 	gunzip -c 2017-04-12-d8dev-0.sql.gz | mysql -u root --password=$dbpwd d8stage
+}
 
+
+if [ "$distro" = "$ubuntu" ]; then
+
+
+	if ["$skipLAMP" != "Y"]; then
+		ubuntu_install_packages
+		configure_apache
+		configure_git
+		install_composer
+	fi
+
+
+	if ["$skipProjectSetup" != "Y"]; then
+		configure_project_dirs
+	fi
+
+
+	configure_drupal_settings
+	restoreDatabases
 
 	#Get drush and drupal via composer...
 	#wget https://ftp.drupal.org/files/projects/drupal-8.2.7.tar.gz
