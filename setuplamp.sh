@@ -216,7 +216,7 @@ function restoreDatabases()
 if [ "$distro" = "$ubuntu" ]; then
 
 
-	if ["$skipLAMP" != "Y"]; then
+	if [ "$skipLAMP" != "Y" ]; then
 		ubuntu_install_packages
 		configure_apache
 		configure_git
@@ -224,7 +224,7 @@ if [ "$distro" = "$ubuntu" ]; then
 	fi
 
 
-	if ["$skipProjectSetup" != "Y"]; then
+	if [ "$skipProjectSetup" != "Y" ]; then
 		configure_project_dirs
 	fi
 
