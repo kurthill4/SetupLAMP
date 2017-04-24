@@ -234,13 +234,13 @@ if [ "$distro" = "$ubuntu" ]; then
 		if [ "$skipLAMP" != "Y" ]; then
 			echo "Full d8dev install."
 			ubuntu_install_packages
-			configure_apache
-			configure_git
-			install_composer
 		fi
 
 
 		if [ "$skipProjectSetup" != "Y" ]; then
+			configure_apache
+			configure_git
+			install_composer
 			configure_project_dirs
 		fi
 
