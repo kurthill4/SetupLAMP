@@ -78,12 +78,10 @@ while [ "$1" != "" ]; do
 						dbfilename=$1
 						;; 
 	
-		--LAMPonly )	shift
-						LAMPonly="Y"
+		--LAMPonly )	LAMPonly="Y"
 						;;
 
-		--skipLAMP )	shift
-						skipLAMP="Y"
+		--skipLAMP )	skipLAMP="Y"
 						;;
 
 
@@ -96,7 +94,7 @@ distro=$(echo $distro | tr '[:upper:]' '[:lower:]')
 ubuntu=$(echo $ubuntu | tr '[:upper:]' '[:lower:]')
 redhat=$(echo $redhat | tr '[:upper:]' '[:lower:]')
 
-if ["$dbpwd" = "" -a "$skipLAMP" != "Y"]; then
+if ["$dbpwd" = ""]; then
 	echo "Must set a database password!"
 	exit 2
 fi
@@ -178,6 +176,15 @@ function install_composer()
 
 function configure_project_dirs()
 {
+	if [ -d $HOME/web-projects ]; then
+		read -e -N 1 -p 'web-projects directory exists!  Delete? [y/N]? ' ans
+		if [ "$ans" =~ "[Yy]" ]; then		
+			rm -rf $HOME/web-projects
+		else
+			return
+		fi
+	fi
+	
 	mkdir $HOME/web-projects
 
 	git clone http://github.com/kurthill4/d8 $HOME/web-projects/dev
@@ -211,7 +218,7 @@ function restoreDatabases()
 {
 
 	echo
-	echo Restoring databases from initial state.  $dbpwd
+	echo "Restoring databases from initial state."
 	sed "s|\$d8user|${d8user}|" createdb.sql > cdb.sql
 	sed -i "s|\$d8password|${d8password}|" cdb.sql
 	
@@ -238,10 +245,10 @@ if [ "$distro" = "$ubuntu" ]; then
 
 
 		if [ "$skipProjectSetup" != "Y" ]; then
-			configure_apache
-			configure_git
 			install_composer
 			configure_project_dirs
+			configure_apache
+			configure_git
 		fi
 
 
