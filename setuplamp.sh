@@ -2,11 +2,11 @@
 
 function showhelp
 {
-	echo Usage: SetupLAMP.sh [OPTIONS]
+	echo 'Usage: SetupLAMP.sh [OPTIONS]'
 	echo
-	echo Options are:
-	echo 	--distro		Linux distributuion in use.  "Redhat" or "Ubuntu".  Default is RedHat.
-	echo	-p | --password		Password for mysql root account.  Only for Ubuntu.
+	echo 'Options are:'
+	echo '	--distro		Linux distributuion in use.  "Redhat" or "Ubuntu".  Default is RedHat.'
+	echo '  -p | --password		Password for mysql root account.  Only for Ubuntu.'
 	echo
 
 	exit 1
@@ -46,6 +46,7 @@ ubuntu="ubuntu"
 redhat="redhat"
 distro=$ubuntu
 hostname=$(hostname)
+dbfilename="2017-04-12-d8dev-0.sql.gz"
 
 while [ "$1" != "" ]; do
 	case $1 in
@@ -72,7 +73,15 @@ while [ "$1" != "" ]; do
 		--d8password )	shift
 						d8password=$1
 						;;
+
+		--dbfilename )	shift
+						dbfilename=$1
+						;; 
 	
+		--LAMPonly )	shift
+						LAMPonly="Y"
+						;;
+
 		--skipLAMP )	shift
 						skipLAMP="Y"
 						;;
@@ -117,7 +126,6 @@ function ubuntu_install_packages()
 	sudo apt-get install -y php7.0 php7.0-mysql php7.0-xml php7.0-cli php-gd php-mbstring
 	sudo apt-get install -y mysql-server mysql-client
 	sudo apt-get install -y apache2 libapache2-mod-php7.0
-	sudo apt-get install -y git subversion
 
 }
 
@@ -136,7 +144,7 @@ function configure_git
 function configure_apache()
 {
 	# The items below are customizations for a Drupal dev/stage/prod installation
-	echo Customizing default LAMP for Drupal dev/stage/prod installation.
+	echo 'Customizing default LAMP for Drupal dev/stage/prod installation.'
 	
 	sudo sh -c 'echo "127.0.0.1 dev"   >> /etc/hosts'
 	sudo sh -c 'echo "127.0.0.1 prod"  >> /etc/hosts'
@@ -201,36 +209,45 @@ function configure_drupal_settings()
 
 function restoreDatabases()
 {
+
 	echo
 	echo Restoring databases from initial state.  $dbpwd
 	sed "s|\$d8user|${d8user}|" createdb.sql > cdb.sql
 	sed -i "s|\$d8password|${d8password}|" cdb.sql
 	
 	mysql -u root --password=$dbpwd < cdb.sql
-	gunzip -c 2017-04-12-d8dev-0.sql.gz | mysql -u root --password=$dbpwd d8dev
-	gunzip -c 2017-04-12-d8dev-0.sql.gz | mysql -u root --password=$dbpwd d8prod
-	gunzip -c 2017-04-12-d8dev-0.sql.gz | mysql -u root --password=$dbpwd d8stage
+	rm cdb.sql
+
+	gunzip -c $dbfilename | mysql -u root --password=$dbpwd d8dev
+	gunzip -c $dbfilename | mysql -u root --password=$dbpwd d8prod
+	gunzip -c $dbfilename | mysql -u root --password=$dbpwd d8stage
 }
 
 
 if [ "$distro" = "$ubuntu" ]; then
 
-
-	if [ "$skipLAMP" != "Y" ]; then
+	if [ "$LAMPonly" == "Y" ]; then
+		echo "Installing LAMP stack only."		
 		ubuntu_install_packages
-		configure_apache
-		configure_git
-		install_composer
+	else
+
+		if [ "$skipLAMP" != "Y" ]; then
+			echo "Full d8dev install."
+			ubuntu_install_packages
+			configure_apache
+			configure_git
+			install_composer
+		fi
+
+
+		if [ "$skipProjectSetup" != "Y" ]; then
+			configure_project_dirs
+		fi
+
+
+		configure_drupal_settings
+		restoreDatabases
 	fi
-
-
-	if [ "$skipProjectSetup" != "Y" ]; then
-		configure_project_dirs
-	fi
-
-
-	configure_drupal_settings
-	restoreDatabases
 
 	#Get drush and drupal via composer...
 	#wget https://ftp.drupal.org/files/projects/drupal-8.2.7.tar.gz
