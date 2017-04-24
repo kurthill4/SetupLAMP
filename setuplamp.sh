@@ -96,7 +96,7 @@ distro=$(echo $distro | tr '[:upper:]' '[:lower:]')
 ubuntu=$(echo $ubuntu | tr '[:upper:]' '[:lower:]')
 redhat=$(echo $redhat | tr '[:upper:]' '[:lower:]')
 
-if ["$dbpwd" = ""]; then
+if ["$dbpwd" = "" -a "$skipLAMP" != "Y"]; then
 	echo "Must set a database password!"
 	exit 2
 fi
