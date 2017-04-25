@@ -178,7 +178,9 @@ function configure_project_dirs()
 {
 	if [ -d $HOME/web-projects ]; then
 		read -e -N 1 -p 'web-projects directory exists!  Delete? [y/N]? ' ans
-		if [ "$ans" =~ "[Yy]" ]; then		
+		if [[ $ans =~ [Yy] ]]; then		
+			echo "Deleting old web-projects."			
+			sudo chown -R	$USER:$USER $HOME/web-projects		
 			rm -rf $HOME/web-projects
 		else
 			return
