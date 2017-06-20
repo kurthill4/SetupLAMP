@@ -201,9 +201,9 @@ function configure_project_dirs()
 	git clone http://github.com/kurthill4/d8 $HOME/web-projects/prod
 
 	pushd .
-	cd $HOME/web-projects/dev;   composer install
-	cd $HOME/web-projects/stage; composer install
-	cd $HOME/web-projects/prod;  composer install
+	cd $HOME/web-projects/dev;   git checkout initial;	composer install
+	cd $HOME/web-projects/stage; git checkout initial;	composer install
+	cd $HOME/web-projects/prod;  git checkout initial;	composer install
 	popd
 
 }
