@@ -176,7 +176,6 @@ function install_composer()
 	sudo php ./installer --install-dir=/usr/local/bin --filename=composer
 	rm installer
 
-	mkdir $HOME/.composer
 	sudo chown -R $USER:$USER $HOME/.composer
 }	
 
