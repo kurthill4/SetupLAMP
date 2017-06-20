@@ -84,6 +84,10 @@ while [ "$1" != "" ]; do
 		--skipLAMP )	skipLAMP="Y"
 						;;
 
+		--hostname )	shift
+						hostname=$1
+						;;
+
 
 	esac
 	shift
@@ -171,6 +175,9 @@ function install_composer()
 
 	sudo php ./installer --install-dir=/usr/local/bin --filename=composer
 	rm installer
+
+	mkdir $HOME/.composer
+	sudo chown -R $USER:$USER $HOME/.composer
 }	
 
 
