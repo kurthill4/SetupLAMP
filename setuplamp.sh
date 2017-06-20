@@ -144,9 +144,9 @@ function configure_apache()
 	# The items below are customizations for a Drupal dev/stage/prod installation
 	echo 'Customizing default LAMP for Drupal dev/stage/prod installation.'
 	
-	sudo sh -c 'echo "127.0.0.1 dev"   >> /etc/hosts'
-	sudo sh -c 'echo "127.0.0.1 prod"  >> /etc/hosts'
-	sudo sh -c 'echo "127.0.0.1 stage" >> /etc/hosts'
+	sudo sh -c 'echo "127.0.0.1 dev.loc"   >> /etc/hosts'
+	sudo sh -c 'echo "127.0.0.1 prod.loc"  >> /etc/hosts'
+	sudo sh -c 'echo "127.0.0.1 stage.loc" >> /etc/hosts'
 
 	sudo a2enmod rewrite
 
