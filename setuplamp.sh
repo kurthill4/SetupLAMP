@@ -125,9 +125,9 @@ function ubuntu_install_packages()
 	sudo debconf-set-selections <<< "mysql-server mysql-server/root_password select $dbpwd"
 	sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again select $dbpwd"
 
-	sudo apt-get install -y php7.0 php7.0-mysql php7.0-xml php7.0-cli php-gd php-mbstring php-curl
+	sudo apt-get install -y php7.2 php7.2-mysql php7.2-xml php7.2-cli php-gd php-mbstring php-curl
 	sudo apt-get install -y mysql-server mysql-client
-	sudo apt-get install -y apache2 libapache2-mod-php7.0
+	sudo apt-get install -y apache2 libapache2-mod-php7.2
 
 }
 
