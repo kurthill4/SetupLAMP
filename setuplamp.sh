@@ -166,8 +166,32 @@ function configure_apache()
 	sudo a2ensite 102-stage.conf
 	sudo a2ensite 103-prod.conf
 
+	sudo a2enmod ssl
+	
+	self_sign '/etc/apache2' '/CN=*'
 	sudo apache2ctl restart
 }	
+
+# Generate an SSL certificate (self-signed).
+# self_sign(path, subj) where path is the path to create the ssl certificate directory, and subj are certificate parameters (openssl -subj parameter)
+function self_sign()
+{
+	echo Generating certificate.
+
+	path=$1/ssl
+	subj=$2
+	privkey=$path/privkey.key
+	pubkey=$path/pubkey.crt
+
+	sudo sh -c 'if [ ! -d $path ]; then mkdir $path; chmod 700 $path; fi'
+	sudo sh -c "if [ -f $privkey ]; then rm $privkey; fi"
+	sudo sh -c "if [ -f $pubkey ]; then rm $pubkey; fi"
+	
+	sudo openssl req -x509 -nodes -newkey rsa:2048 -days 365 -subj $subj -keyout $privkey -out $pubkey
+
+	sudo chmod 600 $path/privkey.key $path/pubkey.crt
+}
+
 
 function install_composer()
 {
