@@ -45,9 +45,8 @@ function setupshare()
 	
 	for path in "/root/.cifs" "/mnt/backup"
 	do
-		if [ ! -d $path ]; then sudo mkdir $path; fi
+		sudo sh -c "if [ ! -d $path ]; then sudo mkdir $path; fi"
 	done
-
 
 	echo "username=backup" >> sdmiramar-backups
 	echo "domain=ics_miramar" >> sdmiramar-backups
@@ -55,9 +54,12 @@ function setupshare()
 	sudo mv sdmiramar-backups /root/.cifs
 	sudo chmod -R 700 /root/.cifs
 
-	echo "#CIFS Share for website backups." | sudo tee -a /etc/fstab > /dev/null
-	echo "//vm-fs-01.ics.sdmiramar.net/Backups/www/sdmiramar /mnt/backup/ cifs credentials=/root/.cifs/sdmiramar-backups 0 0" | sudo tee -a /etc/fstab > /dev/null
-
+	if ! grep "#CIFS Share for website backups." /etc/fstab 
+	then
+		echo "#CIFS Share for website backups." | sudo tee -a /etc/fstab > /dev/null
+		echo "//vm-fs-01.ics.sdmiramar.net/Backups/www/sdmiramar /mnt/backup/ cifs credentials=/root/.cifs/sdmiramar-backups 0 0" | sudo tee -a /etc/fstab > /dev/null
+	fi
+	
 	sudo mount -a
 
 	exit 1
