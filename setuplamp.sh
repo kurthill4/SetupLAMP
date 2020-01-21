@@ -202,7 +202,8 @@ function configure_apache()
 	do
 		echo "Setting up: -- $site --"
 		((sitenum++))
-		filename=/etc/apache2/sites-available/$sitenum-$site-ssl.conf
+		conffile=$sitenum-$site-ssl.conf
+		filename=/etc/apache2/sites-available/$conffile
 		servername=$site.loc
 
 		echo "Server Name: $servername"
@@ -213,8 +214,8 @@ function configure_apache()
 		sudo sed -i "s|\/\$SITE|/$site|g" $filename
 		sudo sed -i "s|\$SERVERNAME|$servername|g" $filename
 		
-		echo sudo a2ensite $filename
-		sudo "a2ensite $filename"
+		echo sudo a2ensite $conffile
+		sudo a2ensite $conffile
 
 	done
 
