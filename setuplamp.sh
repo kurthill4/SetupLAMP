@@ -195,6 +195,8 @@ function configure_apache()
 	sudo a2ensite 101-dev 102-stage 103-prod 
 
 	#Now the SSL versions
+	self_sign '/etc/apache2' '/CN=*'
+	
 	sitenum=100
 	for site in dev stage prod
 	do
@@ -211,11 +213,12 @@ function configure_apache()
 		sudo sed -i "s|\/\$SITE|/$site|g" $filename
 		sudo sed -i "s|\$SERVERNAME|$servername|g" $filename
 		
-		sudo a2ensite $filename
+		echo sudo a2ensite $filename
+		sudo "a2ensite $filename"
 
 	done
 
-	self_sign '/etc/apache2' '/CN=*'
+
 	sudo apache2ctl restart
 }	
 
@@ -229,8 +232,9 @@ function self_sign()
 	subj=$2
 	privkey=$path/privkey.key
 	pubkey=$path/pubkey.crt
-
-	sudo sh -c 'if [ ! -d $path ]; then mkdir $path; chmod 700 $path; fi'
+	
+	echo "Path: " $path
+	sudo sh -c "if [ ! -d $path ]; then mkdir $path; chmod 700 $path; fi"
 	sudo sh -c "if [ -f $privkey ]; then rm $privkey; fi"
 	sudo sh -c "if [ -f $pubkey ]; then rm $pubkey; fi"
 	
