@@ -1,0 +1,29 @@
+Options are:
+
+	--distro	
+		Select Linux Distrubution (default: Ubuntu).
+
+	-p		
+		Prompt for MySQL root password.
+
+	--password [password]
+		Set MySQL root password to [password].
+
+	--d8user
+		Set MySQL user for Drupal databases.
+
+	--d8password
+		Set password for Drupal user.
+
+	--dbfilename
+		The name of the database to restore for the initial setup.
+
+	--LAMPonly
+		Only install the LAMP stack.
+
+	--skipLAMP
+		Skip the LAMP stack setup.
+
+	--hostname
+		Specify the hostname (only used for Redhat)
+

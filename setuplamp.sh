@@ -3,11 +3,7 @@
 function showhelp
 {
 	echo 'Usage: SetupLAMP.sh [OPTIONS]'
-	echo
-	echo 'Options are:'
-	echo '	--distro		Linux distributuion in use.  "Redhat" or "Ubuntu".  Default is RedHat.'
-	echo '  -p | --password		Password for mysql root account.  Only for Ubuntu.'
-	echo
+	cat setuplamp-help.txt
 
 	exit 1
 }
@@ -41,6 +37,24 @@ function getPassword()
 {
 	read -sp "$1" $2
 }
+
+function setupshare()
+{
+	getpassword "Enter password for backup share: " pw
+	sudo mkdir /root/.cifs
+	sudo echo "username=backup" >> /root/.cifs/sdmiramar-backups
+	sudo echo "domain=ics_miramar" >> /root/.cifs/sdmiramar-backups
+	sudo echo "password=$pw" >> /root/.cifs/sdmiramar-backups
+	sudo chmod -R 700 /root/.cifs
+
+	sudo echo "#CIFS Share for website backups." >> /etc/fstab
+	sudo echo "//vm-fs-01.ics.sdmiramar.net/Backups/www/sdmiramar /mnt/backup/ cifs credentials=/root/.cifs/sdmiramar-backups 0 0" >> /etc/fstab
+
+	sudo mount -a
+
+	exit 1
+}
+
 
 ubuntu="ubuntu"
 redhat="redhat"
@@ -88,6 +102,10 @@ while [ "$1" != "" ]; do
 						hostname=$1
 						;;
 
+		--setupshare )	setupshare
+						;;
+				
+
 
 	esac
 	shift
@@ -118,7 +136,7 @@ echo D8 User: $d8user, password: $d8password
 function ubuntu_install_packages()
 {
 	echo Setting up CIFS...
-	sudo apt-get install -y samba
+	sudo apt-get install -y samba cifs-utils
 
 	echo Setting up LAMP...
 	# Set default password for MySQL so install script does not hang in the middle waiting for user input.
@@ -145,6 +163,9 @@ function configure_git
 
 function configure_apache()
 {
+	#enable needed modules
+	sudo a2enmod ssl rewrite
+
 	# The items below are customizations for a Drupal dev/stage/prod installation
 	echo 'Customizing default LAMP for Drupal dev/stage/prod installation.'
 	
@@ -152,22 +173,38 @@ function configure_apache()
 	sudo sh -c 'echo "127.0.0.1 prod.loc"  >> /etc/hosts'
 	sudo sh -c 'echo "127.0.0.1 stage.loc" >> /etc/hosts'
 
-	sudo a2enmod rewrite
 
 	sudo cp -i 101-dev.conf   /etc/apache2/sites-available
 	sudo cp -i 102-stage.conf /etc/apache2/sites-available
 	sudo cp -i 103-prod.conf  /etc/apache2/sites-available
-		
+
 	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/101-dev.conf
 	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/102-stage.conf
 	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/103-prod.conf
 
-	sudo a2ensite 101-dev.conf
-	sudo a2ensite 102-stage.conf
-	sudo a2ensite 103-prod.conf
+	sudo a2ensite 101-dev 102-stage 103-prod 
 
-	sudo a2enmod ssl
-	
+	#Now the SSL versions
+	sitenum=100
+	for site in dev stage prod
+	do
+		echo "Setting up: -- $site --"
+		((sitenum++))
+		filename=/etc/apache2/sites-available/$sitenum-$site-ssl.conf
+		servername=$site.loc
+
+		echo "Server Name: $servername"
+		echo "Config File: $filename"
+
+		sudo cp -i ssl.conf  $filename
+		sudo sed -i "s|\/\$HOME|${HOME}|g" $filename
+		sudo sed -i "s|\/\$SITE|/$site|g" $filename
+		sudo sed -i "s|\$SERVERNAME|$servername|g" $filename
+		
+		sudo a2ensite $filename
+
+	done
+
 	self_sign '/etc/apache2' '/CN=*'
 	sudo apache2ctl restart
 }	
@@ -191,7 +228,6 @@ function self_sign()
 
 	sudo chmod 600 $path/privkey.key $path/pubkey.crt
 }
-
 
 function install_composer()
 {
@@ -261,6 +297,8 @@ function restoreDatabases()
 	gunzip -c $dbfilename | mysql -u root --password=$dbpwd d8prod
 	gunzip -c $dbfilename | mysql -u root --password=$dbpwd d8stage
 }
+
+
 
 
 if [ "$distro" = "$ubuntu" ]; then
