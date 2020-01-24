@@ -1,36 +1,46 @@
 #!/bin/bash
-bkupdate=$(date +"%Y%m%d" -d "- 1 day")
-bkupdir=$HOME"/Desktop/Website Backups"
-site=$HOME"/web-projects/dev"
-site='/var/www/www.sdmiramar.edu'
 
-function restore_files
-{
-	echo Restoring files...
-	sudo tar -xf "$bkupdir"/$files -C "$site"/web/sites/default
-	sudo chown -R khill:www-data "$site"/web/sites/default/files
-	chmod -R ug+w "$site"/web/sites/default/files
-}
+projdir=~/web-projects/backups
+backupdir=/mnt/backup
 
-function restore_database
-{
-	echo Restoring database...
-	gunzip -c "$bkupdir"/$database | mysql -u root -p $dbname
-}
+if [ ! -d $projdir ]; then mkdir $projdir; fi
+ 
+pushd $projdir &> /dev/null
 
+if [ $? -ne 0 ]; then
+  echo "`date`: Missing directory: $projdir"
+  exit 1
+fi
 
-files=$bkupdate-0-files.tar.gz
-database=$bkupdate-0-d8dev.sql.gz
-dbname=sdmiramar
+#Not needed if config is in ~/.my.cnf
+#read -s -p "MySQL Password: " sqlpwd
+#echo "You typed: $sqlpwd"
+ls
+bkfile=`ls -t /mnt/backup | head -1`
 
-restore_files
-restore_database
+echo "`date`: Restoring $backupdir/$bkfile"
 
-pushd
-cd $site && git checkout dev && git pull && composer install
-cd web
-../vendor/drush/drush/drush cr
-popd
+sudo rm -rf web
+tar -xf $backupdir/$bkfile
+sudo chown -R www-data web/sites/default/files
 
+for db in dev stage prod
+do
+  echo "Restoring d8$db..."
+  #mysql -u root -p$sqlpwd d8$db < sdmiramar.sql
+  mysql d8$db < sdmiramar.sql
 
+  pushd ~/web-projects/$db
+  if [ $? -eq 0 ]; then
+	echo "Fetching..."
+	git fetch -v
+    cd web
+    ../vendor/drush/drush/drush sset system.maintenance_mode 0
+    popd &> /dev/null
+  else
+    echo "pushd failed!?"
+  fi
 
+done
+
+popd &> /dev/null

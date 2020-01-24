@@ -1,3 +1,5 @@
+#Bash Aliases for working with Drupal
+
 function dr()
 {
   testpath=${PWD##$HOME/web-projects}
@@ -12,4 +14,7 @@ function dr()
 
   fi;
 }
+
+alias gitlog='git log --all --decorate --oneline --graph'
+alias gitst='git status'
 
