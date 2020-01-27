@@ -65,6 +65,12 @@ function setupshare()
 	exit 1
 }
 
+function addBashAliases()
+{
+	if ! grep "#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11" ~/.bash_aliases
+		cat bash_aliases >> ~/.bash_aliases
+	fi
+}
 
 ubuntu="ubuntu"
 redhat="redhat"
@@ -141,6 +147,9 @@ if [ "$d8password" = "" ]; then
 fi
 
 echo D8 User: $d8user, password: $d8password
+
+echo "Creating bash aliases..."
+addBashAliases()
 
 
 function ubuntu_install_packages()

@@ -1,3 +1,4 @@
+#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11
 #Bash Aliases for working with Drupal
 
 function dr()
