@@ -1,0 +1,5 @@
+#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11
+#CIFS Share for website backups.
+
+//vm-fs-01.ics.sdmiramar.net/Backups/www/sdmiramar /mnt/backup/ cifs credentials=/root/.cifs/sdmiramar-backups 0 0
+

@@ -9,6 +9,8 @@ redhat="redhat"
 distro=$ubuntu
 hostname=$(hostname)
 dbfilename="2017-04-12-d8dev-0.sql.gz"
+skipLAMP="N"
+LAMPonly="N"
 
 while [ "$1" != "" ]; do
 	case $1 in
@@ -81,36 +83,29 @@ echo D8 User: $d8user, password: $d8password
 echo "Creating bash aliases..."
 addBashAliases
 
-
+#The ubunto_install_packages handles the LAMP flags (skipLAMP/LAMPonly)
 if [ "$distro" = "$ubuntu" ]; then
 
-	if [ "$LAMPonly" == "Y" ]; then
-		echo "Installing LAMP stack only."		
-		ubuntu_install_packages
-	else
+	ubuntu_install_packages
+	if [ "$LAMPonly" != "Y" ]; then
+		sudo apache2ctl stop
+		
+		echo "Installing composer and restoring databases."
+		install_composer & p1=$!
+		restoreDatabases & p2=$!
+		configure_git
+		configure_apache
+		wait $p1 $p2 > /dev/null
 
-		if [ "$skipLAMP" != "Y" ]; then
-			echo "Full d8dev install."
-			ubuntu_install_packages
-		fi
+		configureProjectDirs
+		echo "Configuring project directories (Process: $configProjectProcess)"
+		wait $configProjectProcess
 
-
-		if [ "$skipProjectSetup" != "Y" ]; then
-			install_composer
-			configure_project_dirs
-			configure_apache &
-			configure_git &
-		fi
-
-
-		configure_drupal_settings
-		restoreDatabases
+		configureDrupalSettings
+				
+		sudo apache2ctl restart
 	fi
 
-	#Get drush and drupal via composer...
-	#wget https://ftp.drupal.org/files/projects/drupal-8.2.7.tar.gz
-	#wget http://files.drush.org/drush.phar
-	#tar -xvf drupal-8.2.7.tar.gz
 
 fi
 

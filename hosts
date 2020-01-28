@@ -1,0 +1,5 @@
+#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11
+
+127.0.0.1 dev.loc
+127.0.0.1 prod.loc
+127.0.0.1 stage.loc

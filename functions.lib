@@ -1,5 +1,6 @@
 #!/bin/bash
 #This is the functions library for the setuplamp.sh script.
+#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11
 
 function showhelp
 {
@@ -55,40 +56,88 @@ function setupshare()
 	sudo mv sdmiramar-backups /root/.cifs
 	sudo chmod -R 700 /root/.cifs
 
-	if ! grep "#CIFS Share for website backups." /etc/fstab 
+	if ! grep -q "#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11" /etc/fstab 
 	then
-		echo "#CIFS Share for website backups." | sudo tee -a /etc/fstab > /dev/null
-		echo "//vm-fs-01.ics.sdmiramar.net/Backups/www/sdmiramar /mnt/backup/ cifs credentials=/root/.cifs/sdmiramar-backups 0 0" | sudo tee -a /etc/fstab > /dev/null
+		sudo cat fstab >> /etc/fstab
+		sudo mount -a
 	fi
-	
-	sudo mount -a
 
+}
+
+function addHosts()
+{
+	if ! grep -q "#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11" /etc/hosts
+	then
+		cat hosts | sudo tee -a /etc/hosts
+	fi
 }
 
 function addBashAliases()
 {
-	if ! grep "#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11" ~/.bash_aliases
+	if ! grep -q "#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11" ~/.bash_aliases
 	then
 		cat bash_aliases >> ~/.bash_aliases
 	fi
 }
 
+function installPackages
+{
+	packages=$1
+	plist=""	#List to install
+	ilist=""	#list of already installed packages
+	
+	if [ "$packages" == "" ]; then
+		echo "ERROR: installPackages called with empty list!  The Earth will now plunge directly into the Sun."
+		exit 1
+	fi
+
+	echo -n "Checking for package:"
+	for package in $packages
+	do
+		echo -n " $packagename"
+
+		isInstalled $package 
+		if [ $? == 0 ]; then	#Not installed
+			plist="$package $plist"
+		else
+			ilist="$ilist $package"
+		fi
+	done
+
+	echo; echo
+
+	if [ "$ilist" != "" ]; then
+		echo "The following packages were already installed:$ilist"
+	fi
+
+	echo
+
+	if [ "$plist" != "" ]; then
+		echo "installing: [$plist]"
+		sudo apt-get install -y $plist
+	else
+		echo "Nothing to install."
+	fi
+
+}
+
+#This function handles the skipLAMP/LAMPonly flags.
 function ubuntu_install_packages()
 {
-	echo Setting up CIFS...
-	sudo apt-get install -y samba cifs-utils
-
-	echo Setting up LAMP...
-	# Set default password for MySQL so install script does not hang in the middle waiting for user input.
-	sudo debconf-set-selections <<< "mysql-server mysql-server/root_password select $dbpwd"
-	sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again select $dbpwd"
-	cp my.cnf ~/.my.cnf
-	sudo sed -i "s|\/\$PWD|${dbpwd}|g" ~/.my.cnf
-	sudo chmod 600 ~/.my.cnf
+	if [ "$LAMPonly" != "Y" ]; then packages="samba cifs-utils"; fi
 	
-	packages="php7.2 php7.2-mysql php7.2-xml php7.2-cli php-gd php-mbstring php-curl mysql-server mysql-client apache2 libapache2-mod-php7.2"
-	sudo apt-get install -y $packages
+	if [ "$skipLAMP" != "Y" ]; then	
+		packages="$packages php7.2 php7.2-mysql php7.2-xml php7.2-cli php-gd php-mbstring php-curl mysql-server mysql-client apache2 libapache2-mod-php7.2"
 
+		# Set default password for MySQL so install script does not hang in the middle waiting for user input.
+		sudo debconf-set-selections <<< "mysql-server mysql-server/root_password select $dbpwd"
+		sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again select $dbpwd"
+		cp my.cnf ~/.my.cnf
+		sudo sed -i "s|\/\$PWD|${dbpwd}|g" ~/.my.cnf
+		sudo chmod 600 ~/.my.cnf
+	fi
+
+	installPackages "$packages"
 }
 
 function configure_git
@@ -105,26 +154,28 @@ function configure_git
 
 function configure_apache()
 {
+	wait #debug; ensure nothing else rtunning in BG to avoid overlapped text
+	#Ensure server is stopped
+	echo "Configuring Apache..."
+	sudo apache2ctl stop &> /dev/null
+	
 	#enable needed modules
-	sudo a2enmod ssl rewrite
+	sudo a2enmod ssl rewrite &> /dev/null
 
 	# The items below are customizations for a Drupal dev/stage/prod installation
 	echo 'Customizing default LAMP for Drupal dev/stage/prod installation.'
 	
-	sudo sh -c 'echo "127.0.0.1 dev.loc"   >> /etc/hosts'
-	sudo sh -c 'echo "127.0.0.1 prod.loc"  >> /etc/hosts'
-	sudo sh -c 'echo "127.0.0.1 stage.loc" >> /etc/hosts'
+	addHosts
 
-
-	sudo cp -i 101-dev.conf   /etc/apache2/sites-available
-	sudo cp -i 102-stage.conf /etc/apache2/sites-available
-	sudo cp -i 103-prod.conf  /etc/apache2/sites-available
+	sudo cp 101-dev.conf   /etc/apache2/sites-available
+	sudo cp 102-stage.conf /etc/apache2/sites-available
+	sudo cp 103-prod.conf  /etc/apache2/sites-available
 
 	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/101-dev.conf
 	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/102-stage.conf
 	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/103-prod.conf
 
-	sudo a2ensite 101-dev 102-stage 103-prod 
+	sudo a2ensite 101-dev 102-stage 103-prod &> /dev/null
 
 	#Now the SSL versions
 	self_sign '/etc/apache2' '/CN=*'
@@ -132,64 +183,58 @@ function configure_apache()
 	sitenum=100
 	for site in dev stage prod
 	do
-		echo "Setting up: -- $site --"
+
 		((sitenum++))
 		conffile=$sitenum-$site-ssl.conf
 		filename=/etc/apache2/sites-available/$conffile
 		servername=$site.loc
 
-		echo "Server Name: $servername"
-		echo "Config File: $filename"
-
-		sudo cp -i ssl.conf  $filename
+		sudo cp ssl.conf  $filename
 		sudo sed -i "s|\/\$HOME|${HOME}|g" $filename
 		sudo sed -i "s|\/\$SITE|/$site|g" $filename
 		sudo sed -i "s|\$SERVERNAME|$servername|g" $filename
 		
-		echo sudo a2ensite $conffile
-		sudo a2ensite $conffile
+		sudo a2ensite $conffile &> /dev/null
 
 	done
-
-
-	sudo apache2ctl restart
 }	
 
 # Generate an SSL certificate (self-signed).
 # self_sign(path, subj) where path is the path to create the ssl certificate directory, and subj are certificate parameters (openssl -subj parameter)
 function self_sign()
 {
-	echo Generating certificate.
+	echo "Generating certificate."
 
 	path=$1/ssl
 	subj=$2
 	privkey=$path/privkey.key
 	pubkey=$path/pubkey.crt
 	
-	echo "Path: " $path
 	sudo sh -c "if [ ! -d $path ]; then mkdir $path; chmod 700 $path; fi"
 	sudo sh -c "if [ -f $privkey ]; then rm $privkey; fi"
 	sudo sh -c "if [ -f $pubkey ]; then rm $pubkey; fi"
 	
-	sudo openssl req -x509 -nodes -newkey rsa:2048 -days 365 -subj $subj -keyout $privkey -out $pubkey
+	sudo openssl req -x509 -nodes -newkey rsa:2048 -days 365 -subj $subj -keyout $privkey -out $pubkey &> /dev/null
 
 	sudo chmod 600 $path/privkey.key $path/pubkey.crt
 }
 
 function install_composer()
 {
-	wget https://getcomposer.org/installer
+	echo "Installing Composer..."
+	wget https://getcomposer.org/installer > /dev/null
 
-	sudo php ./installer --install-dir=/usr/local/bin --filename=composer
+	sudo { php ./installer --install-dir=/usr/local/bin --filename=composer &> /dev/null }
 	rm installer
 
 	sudo chown -R $USER:$USER $HOME/.composer
 }	
 
-
-function configure_project_dirs()
+function configureProjectDirs()
 {
+	echo "Configuring project directories..."
 	if [ -d $HOME/web-projects ]; then
+		echo "Directory exists!"; jobs
 		read -e -N 1 -p 'web-projects directory exists!  Delete? [y/N]? ' ans
 		if [[ $ans =~ [Yy] ]]; then		
 			echo "Deleting old web-projects."			
@@ -199,22 +244,33 @@ function configure_project_dirs()
 			return
 		fi
 	fi
-	
+	echo "Making dir"
 	mkdir $HOME/web-projects
 
-	git clone http://github.com/kurthill4/d8 $HOME/web-projects/dev &
-	git clone http://github.com/kurthill4/d8 $HOME/web-projects/stage &
-	git clone http://github.com/kurthill4/d8 $HOME/web-projects/prod &
-
-	pushd .
-	cd $HOME/web-projects/dev;   git checkout initial;	composer install 
-	cd $HOME/web-projects/stage; git checkout initial;	composer install &
-	cd $HOME/web-projects/prod;  git checkout initial;	composer install &
-	popd
-
+	_configureProjectDirs & configProjectProcess=$!
 }
 
-function configure_drupal_settings()
+function _configureProjectDirs()
+{
+
+	echo "Cloning website repositories (dev, stage, prod)..."
+	git clone --quiet https://github.com/kurthill4/d8 $HOME/web-projects/dev &> /dev/null & p1=$!
+	git clone --quiet https://github.com/kurthill4/d8 $HOME/web-projects/stage &> /dev/null & p2=$!
+	git clone --quiet https://github.com/kurthill4/d8 $HOME/web-projects/prod &> /dev/null & p3=$!
+	echo "Waiting for git clone processes ($p1, $p2 and $p3) to finish."
+	wait $p1 $p2 $p3
+	
+	echo "Checking out initial repo state and running Composer..."
+	pushd . > /dev/null
+	cd $HOME/web-projects/dev;   git checkout initial &> /dev/null; composer install --no-dev &> /dev/null & p1=$!
+	cd $HOME/web-projects/stage; git checkout initial &> /dev/null; composer install --no-dev &> /dev/null & p2=$!
+	cd $HOME/web-projects/prod;  git checkout initial &> /dev/null; composer install --no-dev &> /dev/null & p3=$!
+	popd > /dev/null
+	echo "Waiting for composer processes ($p1, $p2 and $p3) to finish."
+	wait $p1 $p2 $p3
+}
+
+function configureDrupalSettings()
 {
 	sed "s|\$d8database|d8dev|" settings.php > $HOME/web-projects/dev/web/sites/default/settings.php
 	sed "s|\$d8database|d8prod|" settings.php > $HOME/web-projects/prod/web/sites/default/settings.php
@@ -240,9 +296,11 @@ function restoreDatabases()
 	mysql -u root --password=$dbpwd < cdb.sql
 	rm cdb.sql
 
-	gunzip -c $dbfilename | mysql -u root --password=$dbpwd d8dev
-	gunzip -c $dbfilename | mysql -u root --password=$dbpwd d8prod
-	gunzip -c $dbfilename | mysql -u root --password=$dbpwd d8stage
+	gunzip -c $dbfilename > sdmiramar.sql	
+	mysql -u root --password=$dbpwd d8dev < sdmiramar.sql &> /dev/null & p1=$!
+	mysql -u root --password=$dbpwd d8prod < sdmiramar.sql &> /dev/null & p2=$!
+	mysql -u root --password=$dbpwd d8stage < sdmiramar.sql &> /dev/null & p3=$!
+
 }
 
 
