@@ -133,7 +133,7 @@ function ubuntu_install_packages()
 		sudo debconf-set-selections <<< "mysql-server mysql-server/root_password select $dbpwd"
 		sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again select $dbpwd"
 		cp my.cnf ~/.my.cnf
-		sudo sed -i "s|\/\$PWD|${dbpwd}|g" ~/.my.cnf
+		sudo sed -i "s|\$PWD|${dbpwd}|g" ~/.my.cnf
 		sudo chmod 600 ~/.my.cnf
 	fi
 
