@@ -219,12 +219,12 @@ function self_sign()
 	sudo chmod 600 $path/privkey.key $path/pubkey.crt
 }
 
-function install_composer()
+function installComposer()
 {
 	echo "Installing Composer..."
 	wget https://getcomposer.org/installer > /dev/null
 
-	sudo { php ./installer --install-dir=/usr/local/bin --filename=composer &> /dev/null }
+	sudo php ./installer --install-dir=/usr/local/bin --filename=composer
 	rm installer
 
 	sudo chown -R $USER:$USER $HOME/.composer

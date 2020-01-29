@@ -91,7 +91,7 @@ if [ "$distro" = "$ubuntu" ]; then
 		sudo apache2ctl stop
 		
 		echo "Installing composer and restoring databases."
-		install_composer & p1=$!
+		installComposer & p1=$!
 		restoreDatabases & p2=$!
 		configure_git
 		configure_apache
