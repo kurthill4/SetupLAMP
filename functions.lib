@@ -58,7 +58,7 @@ function setupshare()
 
 	if ! grep -q "#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11" /etc/fstab 
 	then
-		sudo cat fstab ! sudo tee -a /etc/fstab
+		cat fstab | sudo tee -a /etc/fstab
 		sudo mount -a
 	fi
 
