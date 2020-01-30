@@ -41,11 +41,12 @@ function getPassword()
 	echo
 }
 
+#Must pass password as first argument.
 function setupShare()
 {
 	if [ "$setupshare" != "Y" ]; then return; fi
 	
-	getPassword "Enter password for backup share: " pw
+	pw=$1
 	
 	for path in "/root/.cifs" "/mnt/backup"
 	do

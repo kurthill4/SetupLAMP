@@ -53,6 +53,7 @@ while [ "$1" != "" ]; do
 						;;
 
 		--setupshare )	setupshare="Y"
+						getPassword "Enter password for backup share: " sharePW
 						;;
 
 	esac
@@ -90,7 +91,7 @@ if [ "$distro" = "$ubuntu" ]; then
 	if [ "$LAMPonly" != "Y" ]; then
 		sudo apache2ctl stop
 		
-		setupShare
+		setupShare $sharePW
 		installComposer & p1=$!
 		restoreDatabases & p2=$!
 		configure_git
