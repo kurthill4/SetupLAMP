@@ -41,8 +41,10 @@ function getPassword()
 	echo
 }
 
-function setupshare()
+function setupShare()
 {
+	if [ "$setupshare" != "Y" ]; then return; fi
+	
 	getPassword "Enter password for backup share: " pw
 	
 	for path in "/root/.cifs" "/mnt/backup"

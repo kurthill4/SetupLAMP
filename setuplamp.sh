@@ -52,7 +52,7 @@ while [ "$1" != "" ]; do
 						hostname=$1
 						;;
 
-		--setupshare )	setupshare
+		--setupshare )	setupshare="Y"
 						;;
 
 	esac
@@ -90,7 +90,7 @@ if [ "$distro" = "$ubuntu" ]; then
 	if [ "$LAMPonly" != "Y" ]; then
 		sudo apache2ctl stop
 		
-		echo "Installing composer and restoring databases."
+		setupShare
 		installComposer & p1=$!
 		restoreDatabases & p2=$!
 		configure_git
