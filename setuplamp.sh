@@ -104,13 +104,7 @@ if [ "$distro" = "$ubuntu" ]; then
 		
 		wait $configProjectsProc $restoreDatabaseProc
 		restoreDatabase prod & restoreDatabaseProc=$!
-
-		
-
-		#wait $configProjectProcess
-
 		configureDrupalSettings
-
 		configure_apache
 		sudo apache2ctl restart
 	fi

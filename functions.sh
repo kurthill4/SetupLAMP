@@ -77,10 +77,12 @@ function addHosts()
 
 function addBashAliases()
 {
-	if ! grep -q "#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11" ~/.bash_aliases
+	if [ ! -f ~/.bash_aliases ] || ! grep -q "#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11" ~/.bash_aliases
 	then
-		cat bash_aliases >> ~/.bash_aliases
+		echo "Copying bash_aliases."
+		cat bash_aliases.sh >> ~/.bash_aliases
 	fi
+	exit
 }
 
 function installPackages
@@ -308,6 +310,29 @@ function initDatabases()
 	mysql -u root --password=$dbpwd d8prod < sdmiramar.sql &> /dev/null & p2=$!
 	mysql -u root --password=$dbpwd d8stage < sdmiramar.sql &> /dev/null & p3=$!
 
+}
+
+
+#------------------------------------------------------------------------------------------------------------------------------
+# Functions to automate updating the project to work with OS updates, core updates, etc.
+# Things like removing dependencies that don't work with newer core or PHP versions, would go here.
+#------------------------------------------------------------------------------------------------------------------------------
+
+#Ubuntu16to18Fixup: Migrate project from old U16 system with PHP7.0 to Ubuntu 18.04/PHP7.2
+#Parameter 1: Project name (dev/stage/prod) 
+function Ubuntu16to18Fixup()
+{
+	project=$1
+	projectdir=$HOME/web-projects/$1
+	projectdb=d8$project
+	
+	pushd $projectdir > /dev/null
+	
+	git checkout master; git pull
+	composer remove drupal/field_validation
+	
+	
+	popd > /dev/null
 }
 
 
