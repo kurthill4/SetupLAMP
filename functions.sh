@@ -82,7 +82,6 @@ function addBashAliases()
 		echo "Copying bash_aliases."
 		cat bash_aliases.sh >> ~/.bash_aliases
 	fi
-	exit
 }
 
 function installPackages
