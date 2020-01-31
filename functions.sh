@@ -10,9 +10,6 @@ function showhelp
 	exit 1
 }
 
-
-function getBackupFileName() { ls -t /mnt/backup/$1* 2> /dev/null | head -1; }
-
 function isInstalled()
 {
 	packagename=$1
@@ -20,9 +17,9 @@ function isInstalled()
 	PKG_OK=$(dpkg-query -W --showformat='${Status}\n' $packagename | grep "install ok installed")
 
 	if [ "" == "$PKG_OK" ]; then
-		return 0
+		return 0 #False
 	else
-		return 1
+		return 1 #Less false
 	fi
 }
 
@@ -236,7 +233,7 @@ function installComposer()
 	sudo chown -R $USER:$USER $HOME/.composer
 }	
 
-function configureProjectDirs()
+function createProjectDirs()
 {
 	echo "Configuring project directories..."
 	if [ -d $HOME/web-projects ]; then
@@ -250,30 +247,34 @@ function configureProjectDirs()
 			return
 		fi
 	fi
-	echo "Making dir"
+	echo "Making project directories"
 	mkdir $HOME/web-projects
-
-	_configureProjectDirs & configProjectProcess=$!
+	mkdir $HOME/web-projects/backup
+	
 }
 
-function _configureProjectDirs()
+function configureProjects()
 {
-
+	projectdir=$HOME/web-projects
+	
 	echo "Cloning website repositories (dev, stage, prod)..."
-	git clone --quiet https://github.com/kurthill4/d8 $HOME/web-projects/dev &> /dev/null & p1=$!
-	git clone --quiet https://github.com/kurthill4/d8 $HOME/web-projects/stage &> /dev/null & p2=$!
-	git clone --quiet https://github.com/kurthill4/d8 $HOME/web-projects/prod &> /dev/null & p3=$!
-	echo "Waiting for git clone processes ($p1, $p2 and $p3) to finish."
-	wait $p1 $p2 $p3
+	git clone https://github.com/kurthill4/d8 $projectdir/dev
+	cp -r $projectdir/dev $projectdir/stage > /dev/null & p1=$!
+	cp -r $projectdir/dev $projectdir/prod  > /dev/null & p2=$!
+	#git clone --quiet https://github.com/kurthill4/d8 $HOME/web-projects/stage &> /dev/null & p2=$!
+	#git clone --quiet https://github.com/kurthill4/d8 $HOME/web-projects/prod &> /dev/null & p3=$!
+	echo "Waiting for git clone processes ($p1, $p2) to finish."
+	wait $p1 $p2
 	
 	echo "Checking out initial repo state and running Composer..."
 	pushd . > /dev/null
-	cd $HOME/web-projects/dev;   git checkout initial &> /dev/null; composer install --no-dev &> /dev/null & p1=$!
-	cd $HOME/web-projects/stage; git checkout initial &> /dev/null; composer install --no-dev &> /dev/null & p2=$!
-	cd $HOME/web-projects/prod;  git checkout initial &> /dev/null; composer install --no-dev &> /dev/null & p3=$!
+	#The first will populate the cache...  The others can then go concurrently (in theory...)
+	cd $HOME/web-projects/dev;   git checkout initial &> /dev/null; composer install --no-dev
+	cd $HOME/web-projects/stage; git checkout initial &> /dev/null; composer install --no-dev &> /dev/null & p1=$!
+	cd $HOME/web-projects/prod;  git checkout initial &> /dev/null; composer install --no-dev &> /dev/null & p2=$!
 	popd > /dev/null
-	echo "Waiting for composer processes ($p1, $p2 and $p3) to finish."
-	wait $p1 $p2 $p3
+	echo "Waiting for composer processes ($$p1 and $p2) to finish."
+	wait $p1 $p2
 }
 
 function configureDrupalSettings()
@@ -291,7 +292,7 @@ function configureDrupalSettings()
 	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/stage/web/sites/default/settings.php
 }
 
-function restoreDatabases()
+function initDatabases()
 {
 
 	echo
@@ -309,41 +310,4 @@ function restoreDatabases()
 
 }
 
-#Accepts two parameters.
-#Parameter 1: The database name to restore (required)
-#Parameter 2: The beginning of the filename (typically a date as yyyymmdd) to restore a specific backup
-function restoreDatabase()
-{
-	restoredir=~/web-projects/backups
-	
-	#Cannot proceed if I cannot connect to datatabase...
-	if [ ! -f ~/.my.cnf ]; then echo "Missing .my.cnf!  Weeping."; exit 1; fi
-	#TODO: Read mysql pw if not found in .my.cnf -- read -s -p "MySQL Password: " sqlpwd
-	if [ "$1" == "" ]; then echo "restoreDatabase: Missing parameter - database name.  The humanity."; exit 2; fi
-	if ! mysql -u root -e 'use $1'; then echo "Database $1 does not exist.  My heart bleeds."; exit 3; fi
-	if [ ! -d $restoredir ]; then mkdir $restoredir; fi
-	if [ $? -ne 0 ]; then
-	  echo "`date`: Missing directory: $projdir"
-	  exit 1
-	fi
-	
-	bkfile=$(getBackupFileName $2)
-	if [ ! -f $bkfile ]; then echo "No backup file found!  A part of my soul has died."; exit 4; fi
-	
-	pushd $restoredir &> /dev/null
-	echo "Restoring $bkfile"
 
-	sudo rm -rf web
-	tar -xf $bkfile
-	sudo chown -R www-data web/sites/default/files
-
-	echo "Restoring database to $1..."
-	#mysql -u root -p$sqlpwd d8$db < sdmiramar.sql
-	mysql $1 < sdmiramar.sql
-
-	pushd ~/web-projects/$db
-	../vendor/drush/drush/drush sset system.maintenance_mode 0
-	popd &> /dev/null
-	popd &> /dev/null
-
-}

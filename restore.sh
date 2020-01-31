@@ -1,46 +1,59 @@
-#!/bin/bash
+#Return the path/filename for the backup that starts with whatever is passed as $1.
+#If no parameter is passed, it will return the latest backup.
 
-projdir=~/web-projects/backups
-backupdir=/mnt/backup
+function refreshAlias()
+{
+	source ~/.bash_aliases
+}
 
-if [ ! -d $projdir ]; then mkdir $projdir; fi
- 
-pushd $projdir &> /dev/null
+function getBackupFileName() { ls -t /mnt/backup/$1* 2> /dev/null| head -1; }
 
-if [ $? -ne 0 ]; then
-  echo "`date`: Missing directory: $projdir"
-  exit 1
-fi
+#Accepts two parameters.
+#Parameter 1: The project (dev, stage, prod) to restore.
+#Parameter 2: The beginning of the filename (typically a date as yyyymmdd) to restore a specific backup
+#NOTE:   Databases begin with drupal version (e.g. d8), so function will concat "d8" to get to database name.
+function restoreDatabase()
+{
+	restoredir=~/web-projects/backups
+	db="d8$1"
+	
+	#Cannot proceed if I cannot connect to datatabase...
+	if [ ! -f ~/.my.cnf ]; then echo "Missing .my.cnf!  Weeping."; return 1; fi
+	#TODO: Read mysql pw if not found in .my.cnf -- read -s -p "MySQL Password: " sqlpwd
+	if [ "$1" == "" ]; then echo "restoreDatabase: Missing parameter - database name.  The humanity."; return 2; fi
+	if ! mysql -u root -e "use $db"; then echo "Database $db does not exist.  My heart bleeds."; return 3; fi
+	if [ ! -d $restoredir ]; then mkdir $restoredir; fi
+	if [ $? -ne 0 ]; then
+	  echo "`date`: Missing directory: $projdir"
+	  exit 1
+	fi
+	
+	bkfile=$(getBackupFileName $2)
+	echo "Backup filename: [$bkfile]"
+	if [ "$bkfile" == "" ] || [ ! -f $bkfile ]; then echo "No backup file found!  A part of my soul has died."; return 4; fi	
+	
+	pushd $restoredir &> /dev/null
+	echo "Restoring $bkfile"
+	sudo rm -rf web
+	tar -xf $bkfile
+	sudo chown -R www-data web/sites/default/files
 
-#Not needed if config is in ~/.my.cnf
-#read -s -p "MySQL Password: " sqlpwd
-#echo "You typed: $sqlpwd"
-ls
-bkfile=`ls -t /mnt/backup | head -1`
+	echo "Restoring database to $db..."
+	#mysql -u root -p$sqlpwd $db < sdmiramar.sql
+	mysql $db < sdmiramar.sql
 
-echo "`date`: Restoring $backupdir/$bkfile"
+	if [ -d ~/web-projects/$1 ];
+	then
+		pushd ~/web-projects/$1 > /dev/null
+		sudo rm -rf ~/web-projects/$1/web/sites/default/files
+		sudo ln -s ~/web-projects/backups/web/sites/default/files web/sites/default/files
+		dr cr
+		dr sset system.maintenance_mode 0
+		popd > /dev/null
+	fi;
+			
 
-sudo rm -rf web
-tar -xf $backupdir/$bkfile
-sudo chown -R www-data web/sites/default/files
+	popd &> /dev/null
 
-for db in dev stage prod
-do
-  echo "Restoring d8$db..."
-  #mysql -u root -p$sqlpwd d8$db < sdmiramar.sql
-  mysql d8$db < sdmiramar.sql
+}
 
-  pushd ~/web-projects/$db
-  if [ $? -eq 0 ]; then
-	echo "Fetching..."
-	git fetch -v
-    cd web
-    ../vendor/drush/drush/drush sset system.maintenance_mode 0
-    popd &> /dev/null
-  else
-    echo "pushd failed!?"
-  fi
-
-done
-
-popd &> /dev/null

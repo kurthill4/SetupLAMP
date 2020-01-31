@@ -1,5 +1,6 @@
 #!/bin/bash
-source functions.lib
+source bash_aliases.sh
+source functions.sh
 
 
 #Set global defaults.
@@ -89,21 +90,28 @@ if [ "$distro" = "$ubuntu" ]; then
 
 	ubuntu_install_packages
 	if [ "$LAMPonly" != "Y" ]; then
-		sudo apache2ctl stop
-		
-		setupShare $sharePW
-		installComposer & p1=$!
-		restoreDatabases & p2=$!
+		echo "Stopping apache."
+		sudo apache2ctl stop &> /dev/null
 		configure_git
-		configure_apache
-		wait $p1 $p2 > /dev/null
+		setupShare $sharePW
+		createProjectDirs
+		restoreArchive & restoreArchiveProc=$!
+		installComposer & installComposerProc=$!
+		initDatabases & initDatabasesProc=$!
+		wait $installComposerProc $initDatabasesProc 
+		
+		configureProjects & configProjectsProc=$!
+		
+		wait $configProjectsProc $restoreDatabaseProc
+		restoreDatabase prod & restoreDatabaseProc=$!
 
-		configureProjectDirs
-		echo "Configuring project directories (Process: $configProjectProcess)"
-		wait $configProjectProcess
+		
+
+		#wait $configProjectProcess
 
 		configureDrupalSettings
-				
+
+		configure_apache
 		sudo apache2ctl restart
 	fi
 
