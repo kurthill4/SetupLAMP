@@ -22,8 +22,9 @@ function restoreArchive()
 	if [ "$bkfile" == "" ] || [ ! -f $bkfile ]; then echo "No backup file found!  A part of my soul has died."; return 4; fi	
 	
 	echo "Restoredir: $restoredir"
-	pushd $restoredir 
-	pwd
+
+	pushd $restoredir > /dev/null
+
 	echo "Restoring $bkfile"
 	if [ -d web ]; then sudo mv web oldweb; fi
 	tar -xf $bkfile
@@ -36,7 +37,7 @@ function restoreArchive()
 	
 	if [ -d oldweb ]; then sudo rm -rf oldweb; fi
 	sudo chown -R www-data web/sites/default/files
-	popd
+	popd > /dev/null
 }
 
 
