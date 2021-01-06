@@ -131,7 +131,7 @@ function ubuntu_install_packages()
 	if [ "$LAMPonly" != "Y" ]; then packages="samba cifs-utils"; fi
 	
 	if [ "$skipLAMP" != "Y" ]; then	
-		packages="$packages php7.4 php7.4-mysql php7.4-xml php7.4-cli php-gd php-mbstring php-curl mysql-server-8.0 mysql-client-8.0 apache2=2.4.41-4ubuntu3 libapache2-mod-php7.4"
+		packages="$packages php7.4 php7.4-mysql php7.4-xml php7.4-cli php-gd php-mbstring php-curl mysql-server-8.0 mysql-client-8.0 apache2 libapache2-mod-php7.4"
 
 		# Set default password for MySQL so install script does not hang in the middle waiting for user input.
 		sudo debconf-set-selections <<< "mysql-server mysql-server/root_password select $dbpwd"
