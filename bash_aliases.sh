@@ -73,6 +73,7 @@ function restoreDatabase()
 	fi
 	
 	echo "Restoring database to $db..."
+
 	#mysql -u root -p$sqlpwd $db < sdmiramar.sql
 	mysql $db < sdmiramar.sql
 

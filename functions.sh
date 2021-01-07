@@ -228,7 +228,7 @@ function installComposer()
 	echo "Installing Composer..."
 	wget https://getcomposer.org/installer > /dev/null
 
-	sudo php ./installer --install-dir=/usr/local/bin --filename=composer
+	sudo php ./installer --install-dir=/usr/local/bin --filename=composer --1
 	rm installer
 
 	sudo chown -R $USER:$USER $HOME/.composer

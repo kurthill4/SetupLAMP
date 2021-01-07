@@ -95,6 +95,7 @@ if [ "$distro" = "$ubuntu" ]; then
 		configure_git
 		setupShare $sharePW
 		createProjectDirs
+		cp sdmiramar.sql ~/web-projects/backup
 		restoreArchive & restoreArchiveProc=$!
 		installComposer & installComposerProc=$!
 		initDatabases & initDatabasesProc=$!
