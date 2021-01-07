@@ -248,9 +248,11 @@ function createProjectDirs()
 			return
 		fi
 	fi
+
+	#Make project directories -- including intermediate directories.
+	#Need to create all the way to "files" so we can automate symlink to files later
 	echo "Making project directories"
-	mkdir $HOME/web-projects
-	mkdir $HOME/web-projects/backup
+	mkdir -p $HOME/web-projects/backup/web/sites/default/files
 	
 }
 
@@ -260,10 +262,15 @@ function configureProjects()
 	
 	echo "Cloning website repositories (dev, stage, prod)..."
 	git clone https://github.com/kurthill4/d8 $projectdir/dev
+
+	#Now symlink the files directory to the files dir in the backup area:
+	rmdir $projectdir/dev/web/sites/default/files
+	ln -s $projectdir/backup/web/sites/default/files $projectdir/dev/web/sites/default/files 	
+	read -p "Check link in dev... [PRESS ENTER]" foo
+	#Just copy the repository for the stage/prod sites
 	cp -r $projectdir/dev $projectdir/stage > /dev/null & p1=$!
 	cp -r $projectdir/dev $projectdir/prod  > /dev/null & p2=$!
-	#git clone --quiet https://github.com/kurthill4/d8 $HOME/web-projects/stage &> /dev/null & p2=$!
-	#git clone --quiet https://github.com/kurthill4/d8 $HOME/web-projects/prod &> /dev/null & p3=$!
+
 	echo "Waiting for git clone processes ($p1, $p2) to finish."
 	wait $p1 $p2
 	
