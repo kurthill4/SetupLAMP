@@ -90,12 +90,22 @@ function restoreDatabase()
 
 function dr()
 {
+  #testpath will wither be surrent sub-dir of web-projects, or null (if in
+  #web-projects but not a subdirectory) or will be equal to $PWD
   testpath=${PWD##$HOME/web-projects}
   if [[ $testpath != ${PWD} && $testpath != "" ]]; then
     projectdir=$(echo "$testpath" | awk -F "/" '{print $2}')
 
     drushpath=$HOME/web-projects/$projectdir/vendor/drush/drush
-    drupalpath=$HOME/web-projects/$projectdir/web
+    basepath=$HOME/web-projects/$projectdir
+    if [[ -d $basepath/web ]]; then drupalpath=$basepath/web; fi
+    if [[ -d $basepath/docroot ]]; then drupalpath=$basepath/docroot; fi
+
+    if [[ "$drupalpath" == "" ]]; then 
+    	echo "Can't find web/docroot directory.  There is a gaping hole in my soul."
+    	return 2
+    fi
+
     pushd "$drupalpath" > /dev/null
     "$drushpath"/drush "$@"
     popd > /dev/null

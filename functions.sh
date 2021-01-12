@@ -266,7 +266,7 @@ function configureProjects()
 	#Now symlink the files directory to the files dir in the backup area:
 	rmdir $projectdir/dev/web/sites/default/files
 	ln -s $projectdir/backup/web/sites/default/files $projectdir/dev/web/sites/default/files 	
-	read -p "Check link in dev... [PRESS ENTER]" foo
+
 	#Just copy the repository for the stage/prod sites
 	cp -r $projectdir/dev $projectdir/stage > /dev/null & p1=$!
 	cp -r $projectdir/dev $projectdir/prod  > /dev/null & p2=$!
