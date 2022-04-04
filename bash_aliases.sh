@@ -1,4 +1,4 @@
-#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11
+#SCRIPTID: c177481e-790d-4354-a596-c7aae6b0d152
 #Bash Aliases for working with Drupal
 
 function refreshAlias()
@@ -133,4 +133,4 @@ alias gitlog='git log --all --decorate --oneline --graph'
 alias gitst='git status'
 
 #End of script chunk
-#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11
+#SCRIPTID: c177481e-790d-4354-a596-c7aae6b0d152

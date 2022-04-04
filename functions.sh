@@ -1,6 +1,30 @@
 #!/bin/bash
 #This is the functions library for the setuplamp.sh script.
+#Add all needed packages using addPackage, then call installPackages
 #SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11
+
+
+#Global variables.
+aptPackages=""		#Global list of packages to install
+arrScriptsLoaded+=("6581a047-37eb-4384-b15d-14478317fb11")
+
+function isScriptLoaded
+{
+	_result=0	#0=false/Not loaded
+	if [[ "${arrScriptsLoaded[@]}" =~ "$1" ]]; then
+		_result=1
+	fi
+
+	return $_result
+}
+
+function scriptsLoaded
+{
+	for script in "${arrScriptsLoaded[@]}"
+	do
+		echo $script
+	done
+}
 
 function showhelp
 {
@@ -23,13 +47,84 @@ function isInstalled()
 	fi
 }
 
+#Adds a single package to list of packages to install
+function addPackage
+{
+	pkg=$1
+	status=0
+
+	isInstalled $pkg &> /dev/null
+	if [ "$?" == "0" ]; then
+		echo "Adding package: $pkg"
+		#Add a space between package names
+		#[[ "$pkg" != ""  ]] && $pkg="$pkg "
+		aptPackages+=" $1"
+		
+	else
+		echo "Package already installed: $pkg"
+		status=-1
+	fi
+
+	return $status
+}
+
+#Adds a space-delimited list of packages to the globla list
+function addPackages
+{
+	packages=$1
+	ilist=""	#list of already installed packages
+
+	if [ "$packages" == "" ]; then
+		echo "ERROR: addPackages called with empty list!  The Earth will now plunge directly into the Sun."
+		exit 1
+	fi
+
+	echo -n "Checking for packages already installed:"
+	for package in $packages
+	do
+		echo -n " $package"
+		addPackage $package
+		[[ $? -ne 0 ]] && ilist="$ilist $package"
+	done
+
+	echo; echo
+
+	if [ "$ilist" != "" ]; then
+		echo "The following packages were already installed:$ilist"
+	fi
+
+}
+
+#Installs packages.  Packages must be added to global list via addPackage(s) functions.
+#Arg1 = cacheonly setting
+function installPackages
+{
+	_cacheOnly=$1
+	_aptArgs=""	#Arguments for the apt command
+
+	#Check for cache-only option
+	_aptArgs="-y"
+	if [ "$_cacheOnly" == "Y" ]; then
+		_aptArgs+" --download-only"
+	fi
+
+	#Install using global variable that has been put through the addPackage process
+	if [ "$aptPackages" != "" ]; then
+		echo "installing: [$aptPackages]"
+		sudo apt install $_aptArgs $aptPackages
+	else
+		echo "Nothing to install."
+	fi
+
+}
+
 function installVMWareTools
 {
-	vmtools="open-vm-tools-desktop"
-	isInstalled $vmtools &> /dev/null
+	_vmtools="open-vm-tools-desktop"
+	isInstalled $_vmtools &> /dev/null
 	if [ "$?" == "0" ]; then
 		echo "Installing open VMWare Tools..."
-		sudo apt-get install $vmtools
+		AddPackage $_vmtools
 	else
 		echo "open VMWare tools are already installed."
 	fi
@@ -77,57 +172,20 @@ function addHosts()
 
 function addBashAliases()
 {
-	if [ ! -f ~/.bash_aliases ] || ! grep -q "#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11" ~/.bash_aliases
+	if [ ! -f ~/.bash_aliases ] || ! grep -q "#SCRIPTID: c177481e-790d-4354-a596-c7aae6b0d152" ~/.bash_aliases
 	then
 		echo "Copying bash_aliases."
 		cat bash_aliases.sh >> ~/.bash_aliases
 	fi
 }
 
-function installPackages
-{
-	packages=$1
-	plist=""	#List to install
-	ilist=""	#list of already installed packages
-	
-	if [ "$packages" == "" ]; then
-		echo "ERROR: installPackages called with empty list!  The Earth will now plunge directly into the Sun."
-		exit 1
-	fi
-
-	echo -n "Checking for package:"
-	for package in $packages
-	do
-		echo -n " $packagename"
-
-		isInstalled $package 
-		if [ $? == 0 ]; then	#Not installed
-			plist="$package $plist"
-		else
-			ilist="$ilist $package"
-		fi
-	done
-
-	echo; echo
-
-	if [ "$ilist" != "" ]; then
-		echo "The following packages were already installed:$ilist"
-	fi
-
-	echo
-
-	if [ "$plist" != "" ]; then
-		echo "installing: [$plist]"
-		sudo apt-get install -y $plist
-	else
-		echo "Nothing to install."
-	fi
-
-}
 
 #This function handles the skipLAMP/LAMPonly flags.
+#Arg1 = cacheonly flag
 function ubuntu_install_packages()
 {
+	$_cacheOnly=$1
+
 	if [ "$LAMPonly" != "Y" ]; then packages="samba cifs-utils"; fi
 	
 	if [ "$skipLAMP" != "Y" ]; then	
@@ -141,7 +199,9 @@ function ubuntu_install_packages()
 		sudo chmod 600 ~/.my.cnf
 	fi
 
-	installPackages "$packages"
+	addPackages "$packages"
+	installPackages $_cacheOnly
+
 }
 
 function configure_git
@@ -226,7 +286,10 @@ function self_sign()
 function installComposer()
 {
 	echo "Installing Composer..."
-	wget https://getcomposer.org/installer > /dev/null
+	#Install composer version 1 using the --1 option
+	#url="https://getcomposer.org/download/latest-1.x/composer.phar"
+	url="https://getcomposer.org/installer"
+	wget -O installer $url > /dev/null
 
 	sudo php ./installer --install-dir=/usr/local/bin --filename=composer --1
 	rm installer
