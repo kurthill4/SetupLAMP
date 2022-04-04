@@ -287,12 +287,19 @@ function installComposer()
 	#Install composer version 1 using the --1 option
 	#url="https://getcomposer.org/download/latest-1.x/composer.phar"
 	url="https://getcomposer.org/installer"
-	wget -O installer $url > /dev/null
+	[[ "$offline" == "N" ]] && wget -o /dev/null -O installer $url
+	if [[ $? != 0 && ! -f installer ]]; then
+		echo "Error downloading composer installer, and no cached copy exists.  My soul weeps."
+		exit 1
+	else
+		echo "Error downloading composer installer.  Using a cached copy."
+	fi
 
-	sudo php ./installer --install-dir=/usr/local/bin --filename=composer --1
-	rm installer
-
-	sudo chown -R $USER:$USER $HOME/.composer
+	if [[ "$cacheonly" == "N" ]]; then
+		sudo php ./installer --install-dir=/usr/local/bin --filename=composer --1
+		rm installer
+		sudo chown -R $USER:$USER $HOME/.composer
+	fi
 }	
 
 function createProjectDirs()

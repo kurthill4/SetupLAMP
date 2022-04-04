@@ -20,7 +20,6 @@ function pre_install
 
 function setup_docker_repository 
 {
-    
     echo Installing Docker Repositories.
 
     #Add git repository to get the very latest version of git.
@@ -32,8 +31,13 @@ function setup_docker_repository
     if [ -f "$file" ]; then
         echo "Docker GPG key already exists."
     else
-        #curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o $file
-        wget -O - -o /dev/null https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o $file
+        $url="https://download.docker.com/linux/ubuntu/gpg"
+        #curl -fsSL $url | sudo gpg --dearmor -o $file
+        
+        [[ "$offline" == "N" ]] wget -O docker-key.gpg -o /dev/null $url
+#TODO: Check for stuff...
+        [[ $? -eq 0 ]] && sudo gpg --dearmor -o $file docker-key.gpg
+        rm docker-key.gpg
     fi
 
     #Add the repositories
