@@ -79,10 +79,8 @@ function addPackages
 		exit 1
 	fi
 
-	echo -n "Checking for packages already installed:"
 	for package in $packages
 	do
-		echo -n " $package"
 		addPackage $package
 		[[ $? -ne 0 ]] && ilist="$ilist $package"
 	done
@@ -105,7 +103,7 @@ function installPackages
 	#Check for cache-only option
 	_aptArgs="-y"
 	if [ "$_cacheOnly" == "Y" ]; then
-		_aptArgs+" --download-only"
+		_aptArgs+=" --download-only"
 	fi
 
 	#Install using global variable that has been put through the addPackage process
