@@ -8,6 +8,13 @@
 #Set global defaults.
 #cacheonly will not do any other processing besides caching packages and downloading the composer installer.
 
+#offline		Use only cached information.  Don't wget/curl files, apt/composer  installs must be in the cache, etc.
+#				This switch is mutually exclusive with "--cacheonly"
+#cacheonly:		Download files only, do not install anything, or make ay configuration changes unless absolutely needed
+#				For instance, to cache docker requires adding a repo & key, so that has to happen, but no other config.
+#				This switch is mutually exclusive with "--offline"
+#dockeronly:	Installs docker only.
+
 ubuntu="ubuntu"
 redhat="redhat"
 distro=$ubuntu
@@ -16,7 +23,8 @@ dbfilename="2017-04-12-d8dev-0.sql.gz"
 skipLAMP="N"
 LAMPonly="N"
 cacheonly="N"
-dockeronly="N"	
+dockeronly="N"
+offline="N"		
 
 while [ "$1" != "" ]; do
 	case $1 in
@@ -68,9 +76,17 @@ while [ "$1" != "" ]; do
 		--dockeronly )	dockeronly="Y"
 						;;
 
+		--offline )		offline="Y"
+						;;
+
 	esac
 	shift
 done
+
+if [[ "$offline$cacheonly" == "YY" ]]; then
+	echo "Cannot cache items when offline.  Discarding Universe and going home."
+	exit 1
+fi
 
 # Ensure everything is the same case.
 distro=$(echo $distro | tr '[:upper:]' '[:lower:]')
