@@ -72,6 +72,8 @@ while [ "$1" != "" ]; do
 						;;
 
 		--cacheonly )	cacheonly="Y"
+						LAMPonly="Y"	#cacheonly implies LAMPonly (e.g., no nofig)
+						setupshare="N"	#no config
 						;;
 		
 		--dockeronly )	dockeronly="Y"
@@ -84,7 +86,7 @@ while [ "$1" != "" ]; do
 	shift
 done
 
-if [[ "$offline$cacheonly" == "YY" ]]; then
+if [[ "$offline$cacheonly" = "YY" ]]; then
 	echo "Cannot cache items when offline.  Discarding Universe and going home."
 	exit 1
 fi
@@ -121,11 +123,13 @@ if [ "$distro" = "$ubuntu" ]; then
 
 	setup_docker_repository
 	addPackages "docker-ce docker-ce-cli containerd.io"
+	if [[ "$dockeronly" == "Y" ]]; then
+		installPackages
+		exit 0
+	fi
+
+	ubuntuAddPackages
 	installPackages $cacheonly
-
-	[[ "$dockeronly" == "Y" ]] && exit 0
-
-	ubuntu_install_packages $cacheonly
 	[[ "$cacheonly" = "Y" ]] && exit 0
 
 	if [ "$LAMPonly" != "Y" ]; then

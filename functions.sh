@@ -180,10 +180,8 @@ function addBashAliases()
 
 #This function handles the skipLAMP/LAMPonly flags.
 ##Arg1 = cacheonly flag
-function ubuntu_install_packages()
+function ubuntuAddPackages()
 {
-	$_cacheOnly=$1
-
 	if [ "$LAMPonly" != "Y" ]; then packages="samba cifs-utils"; fi
 	
 	if [ "$skipLAMP" != "Y" ]; then	
@@ -198,8 +196,6 @@ function ubuntu_install_packages()
 	fi
 
 	addPackages "$packages"
-	installPackages $_cacheOnly
-
 }
 
 function configure_git
