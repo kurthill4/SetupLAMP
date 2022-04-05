@@ -18,8 +18,11 @@ function pre_install
     addPackages "ca-certificates curl gnupg lsb-release"
 }
 
+#TODO: 
 function setup_docker_repository 
 {
+    local _result=0
+
     echo Installing Docker Repositories.
 
     #Add git repository to get the very latest version of git.
@@ -31,13 +34,20 @@ function setup_docker_repository
     if [ -f "$file" ]; then
         echo "Docker GPG key already exists."
     else
-        $url="https://download.docker.com/linux/ubuntu/gpg"
+        url="https://download.docker.com/linux/ubuntu/gpg"
         #curl -fsSL $url | sudo gpg --dearmor -o $file
         
-        [[ "$offline" == "N" ]] wget -O docker-key.gpg -o /dev/null $url
-#TODO: Check for stuff...
-        [[ $? -eq 0 ]] && sudo gpg --dearmor -o $file docker-key.gpg
-        rm docker-key.gpg
+        if [[ "$offline" == "N" ]]; then
+            wget -O docker-key.gpg -o /dev/null $url
+            [[ $? -ne 0 ]] && echo "Unable to download Docker GPG key.  Looking for cached key..."
+        fi
+
+        if [[ ! -f docker-key.gpg ]]; then
+            echo "Missing Docker GPG key file.  Extinguishing dinosaurs..."
+            exit 1
+        fi
+
+        sudo gpg --dearmor -o $file docker-key.gpg
     fi
 
     #Add the repositories

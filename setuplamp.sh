@@ -14,6 +14,7 @@
 #				For instance, to cache docker requires adding a repo & key, so that has to happen, but no other config.
 #				This switch is mutually exclusive with "--offline"
 #dockeronly:	Installs docker only.
+#LAMPonly		Skips all web/database configuration steps.
 
 ubuntu="ubuntu"
 redhat="redhat"
@@ -93,7 +94,7 @@ distro=$(echo $distro | tr '[:upper:]' '[:lower:]')
 ubuntu=$(echo $ubuntu | tr '[:upper:]' '[:lower:]')
 redhat=$(echo $redhat | tr '[:upper:]' '[:lower:]')
 
-if [[ "$cacheonly" = "" ]]; then
+if [[ "$cacheonly" = "N" ]]; then
 	if [ "$dbpwd" = "" ]; then
 		echo "Must set a database password!"
 		exit 2
@@ -114,15 +115,15 @@ if [[ "$cacheonly" = "" ]]; then
 	addBashAliases
 fi
 
-if [[ "$dockeronly" == "Y" ]]; then
+#The ubunto_install_packages handles the LAMP flags (skipLAMP/LAMPonly)
+if [ "$distro" = "$ubuntu" ]; then
+
+
 	setup_docker_repository
 	addPackages "docker-ce docker-ce-cli containerd.io"
 	installPackages $cacheonly
-	exit 0
-fi
 
-#The ubunto_install_packages handles the LAMP flags (skipLAMP/LAMPonly)
-if [ "$distro" = "$ubuntu" ]; then
+	[[ "$dockeronly" == "Y" ]] && exit 0
 
 	ubuntu_install_packages $cacheonly
 	[[ "$cacheonly" = "Y" ]] && exit 0
