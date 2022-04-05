@@ -179,7 +179,7 @@ function addBashAliases()
 
 
 #This function handles the skipLAMP/LAMPonly flags.
-#Arg1 = cacheonly flag
+##Arg1 = cacheonly flag
 function ubuntu_install_packages()
 {
 	$_cacheOnly=$1
