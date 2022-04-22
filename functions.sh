@@ -334,29 +334,36 @@ function configureProjects()
 	#Now symlink the files directory to the files dir in the backup area:
 	rmdir $projectdir/dev/docroot/sites/default/files
 	ln -s $projectdir/files $projectdir/dev/docroot/sites/default/files 	
+	pushd .
+	cd $projectdir/dev
+	git checkout Production
+	composer install --no-dev
+	popd
 
 	#Just copy the repository for the stage/prod sites
 	cp -r $projectdir/dev $projectdir/stage > /dev/null & p1=$!
 	cp -r $projectdir/dev $projectdir/prod  > /dev/null & p2=$!
 
-	echo "Waiting for git clone processes ($p1, $p2) to finish."
+	echo "Waiting for copies ($p1, $p2) to finish."
 	wait $p1 $p2
 	
-	echo "Checking out initial repo state and running Composer..."
-	pushd . > /dev/null
+	#echo "Checking out Production repo state and running Composer..."
+	#pushd . > /dev/null
 	#The first will populate the cache...  The others can then go concurrently (in theory...)
-	cd $HOME/web-projects/dev;   git checkout initial &> /dev/null; composer install --no-dev
-	cd $HOME/web-projects/stage; git checkout initial &> /dev/null; composer install --no-dev &> /dev/null & p1=$!
-	cd $HOME/web-projects/prod;  git checkout initial &> /dev/null; composer install --no-dev &> /dev/null & p2=$!
-	popd > /dev/null
-	echo "Waiting for composer processes ($$p1 and $p2) to finish."
-	wait $p1 $p2
+	#cd $HOME/web-projects/dev;   git checkout Production &> /dev/null; composer install --no-dev & p0=$!
+
+	#cd $HOME/web-projects/stage; git checkout Production &> /dev/null; composer install --no-dev &> /dev/null & p1=$!
+	#cd $HOME/web-projects/prod;  git checkout Production &> /dev/null; composer install --no-dev &> /dev/null & p2=$!
+	#popd > /dev/null
+	#echo "Waiting for composer processes ($$p1 and $p2) to finish."
+	#wait $p1 $p2
 }
 
 function configureDrupalSettings()
 {
-	sed "s|\$d8database|d8dev|" settings.php > $HOME/web-projects/dev/docroot/sites/default/settings.php
-	sed "s|\$d8database|d8prod|" settings.php > $HOME/web-projects/prod/docroot/sites/default/settings.php
+	
+	sed "s|\$d8database|d8dev|" settings.php > $HOME/web-projects/dev/docroot/sites/default/settings/dev.settings.php
+	sed "s|\$d8database|d8prod|" settings.php > $HOME/web-projects/prod/docroot/sites/default/settings/prod settings.php
 	sed "s|\$d8database|d8stage|" settings.php > $HOME/web-projects/stage/docroot/sites/default/settings.php
 
 	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/dev/docroot/sites/default/settings.php
