@@ -7,6 +7,7 @@
 #Global variables.
 aptPackages=""		#Global list of packages to install
 arrScriptsLoaded+=("6581a047-37eb-4384-b15d-14478317fb11")
+repository="https://github.com/kurthill4/miraweb2021"
 
 function isScriptLoaded
 {
@@ -99,8 +100,8 @@ function installPackages
 {
 	_cacheOnly=$1
 	_aptArgs=""	#Arguments for the apt command
-	_msg="Installing: 
-	"
+	_msg="Installing: "
+
 	#Check for cache-only option
 	_aptArgs="-y"
 	if [ "$_cacheOnly" == "Y" ]; then
@@ -327,7 +328,7 @@ function configureProjects()
 	projectdir=$HOME/web-projects
 	
 	echo "Cloning website repositories (dev, stage, prod)..."
-	git clone https://github.com/kurthill4/d8 $projectdir/dev
+	git clone $repository $projectdir/dev
 
 	#Now symlink the files directory to the files dir in the backup area:
 	rmdir $projectdir/dev/web/sites/default/files
