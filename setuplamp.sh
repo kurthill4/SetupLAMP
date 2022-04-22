@@ -14,7 +14,9 @@
 #				For instance, to cache docker requires adding a repo & key, so that has to happen, but no other config.
 #				This switch is mutually exclusive with "--offline"
 #dockeronly:	Installs docker only.
-#LAMPonly		Skips all web/database configuration steps.
+#LAMPonly:		Skips all web/database configuration steps.
+#noinstall:		Skips apt installs.
+
 
 ubuntu="ubuntu"
 redhat="redhat"
@@ -84,6 +86,9 @@ while [ "$1" != "" ]; do
 		--offline )		offline="Y"
 						;;
 
+		--noinstall )	noinstall="Y"
+						;;
+
 	esac
 	shift
 done
@@ -122,17 +127,18 @@ fi
 #The ubunto_install_packages handles the LAMP flags (skipLAMP/LAMPonly)
 if [ "$distro" = "$ubuntu" ]; then
 
+	if [ "$noinstall" != "Y" ]; then
+		setup_docker_repository
+		addPackages "docker-ce docker-ce-cli containerd.io"
+		if [[ "$dockeronly" == "Y" ]]; then
+			installPackages $cacheonly
+			exit 0
+		fi
 
-	setup_docker_repository
-	addPackages "docker-ce docker-ce-cli containerd.io"
-	if [[ "$dockeronly" == "Y" ]]; then
+		ubuntuAddPackages
 		installPackages $cacheonly
-		exit 0
+		[[ "$cacheonly" = "Y" ]] && exit 0
 	fi
-
-	ubuntuAddPackages
-	installPackages $cacheonly
-	[[ "$cacheonly" = "Y" ]] && exit 0
 
 	if [ "$LAMPonly" != "Y" ]; then
 		echo "Stopping apache."

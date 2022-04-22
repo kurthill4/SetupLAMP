@@ -7,7 +7,8 @@
 #Global variables.
 aptPackages=""		#Global list of packages to install
 arrScriptsLoaded+=("6581a047-37eb-4384-b15d-14478317fb11")
-repository="https://github.com/kurthill4/miraweb2021"
+#repository="https://github.com/kurthill4/miraweb2021"
+repository="git@github.com:kurthill4/miraweb2021"
 
 function isScriptLoaded
 {
@@ -188,7 +189,7 @@ function ubuntuAddPackages()
 	if [ "$LAMPonly" != "Y" ]; then packages="samba cifs-utils"; fi
 	
 	if [ "$skipLAMP" != "Y" ]; then	
-		packages="$packages php7.4 php7.4-mysql php7.4-xml php7.4-cli php-gd php-mbstring php-curl mysql-server-8.0 mysql-client-8.0 apache2 libapache2-mod-php7.4"
+		packages="$packages php7.4 php7.4-mysql php7.4-xml php7.4-cli php-gd php-mbstring php-curl mysql-server-8.0 mysql-client-8.0 apache2 libapache2-mod-php7.4 php-zip"
 
 		# Set default password for MySQL so install script does not hang in the middle waiting for user input.
 		sudo debconf-set-selections <<< "mysql-server mysql-server/root_password select $dbpwd"
@@ -319,7 +320,7 @@ function createProjectDirs()
 	#Make project directories -- including intermediate directories.
 	#Need to create all the way to "files" so we can automate symlink to files later
 	echo "Making project directories"
-	mkdir -p $HOME/web-projects/backup/web/sites/default/files
+	mkdir -p $HOME/web-projects/files
 	
 }
 
@@ -331,8 +332,8 @@ function configureProjects()
 	git clone $repository $projectdir/dev
 
 	#Now symlink the files directory to the files dir in the backup area:
-	rmdir $projectdir/dev/web/sites/default/files
-	ln -s $projectdir/backup/web/sites/default/files $projectdir/dev/web/sites/default/files 	
+	rmdir $projectdir/dev/docroot/sites/default/files
+	ln -s $projectdir/files $projectdir/dev/docroot/sites/default/files 	
 
 	#Just copy the repository for the stage/prod sites
 	cp -r $projectdir/dev $projectdir/stage > /dev/null & p1=$!
@@ -354,34 +355,34 @@ function configureProjects()
 
 function configureDrupalSettings()
 {
-	sed "s|\$d8database|d8dev|" settings.php > $HOME/web-projects/dev/web/sites/default/settings.php
-	sed "s|\$d8database|d8prod|" settings.php > $HOME/web-projects/prod/web/sites/default/settings.php
-	sed "s|\$d8database|d8stage|" settings.php > $HOME/web-projects/stage/web/sites/default/settings.php
+	sed "s|\$d8database|d8dev|" settings.php > $HOME/web-projects/dev/docroot/sites/default/settings.php
+	sed "s|\$d8database|d8prod|" settings.php > $HOME/web-projects/prod/docroot/sites/default/settings.php
+	sed "s|\$d8database|d8stage|" settings.php > $HOME/web-projects/stage/docroot/sites/default/settings.php
 
-	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/dev/web/sites/default/settings.php
-	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/prod/web/sites/default/settings.php
-	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/stage/web/sites/default/settings.php
+	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/dev/docroot/sites/default/settings.php
+	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/prod/docroot/sites/default/settings.php
+	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/stage/docroot/sites/default/settings.php
 
-	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/dev/web/sites/default/settings.php
-	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/prod/web/sites/default/settings.php
-	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/stage/web/sites/default/settings.php
+	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/dev/docroot/sites/default/settings.php
+	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/prod/docroot/sites/default/settings.php
+	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/stage/docroot/sites/default/settings.php
 }
 
 function initDatabases()
 {
 
 	echo
-	echo "Restoring databases from initial state."
+	echo "Creating and restoring databases from: $dbfilename..."
 	sed "s|\$d8user|${d8user}|" createdb.sql > cdb.sql
 	sed -i "s|\$d8password|${d8password}|" cdb.sql
 	
 	mysql -u root --password=$dbpwd < cdb.sql
 	rm cdb.sql
 
-	gunzip -c $dbfilename > sdmiramar.sql	
-	mysql -u root --password=$dbpwd d8dev < sdmiramar.sql &> /dev/null & p1=$!
-	mysql -u root --password=$dbpwd d8prod < sdmiramar.sql &> /dev/null & p2=$!
-	mysql -u root --password=$dbpwd d8stage < sdmiramar.sql &> /dev/null & p3=$!
+	#gunzip -c $dbfilename > sdmiramar.sql	
+	mysql -u root --password=$dbpwd d8dev < $dbfilename &> /dev/null & p1=$!
+	mysql -u root --password=$dbpwd d8prod < $dbfilename &> /dev/null & p2=$!
+	mysql -u root --password=$dbpwd d8stage < $dbfilename &> /dev/null & p3=$!
 
 }
 
