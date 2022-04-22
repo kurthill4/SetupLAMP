@@ -77,6 +77,8 @@ while [ "$1" != "" ]; do
 						;;
 		
 		--dockeronly )	dockeronly="Y"
+						LAMPonly="Y"	#dockeronly implies LAMPonly (e.g., no nofig)
+						setupshare="N"	#no config
 						;;
 
 		--offline )		offline="Y"
@@ -124,7 +126,7 @@ if [ "$distro" = "$ubuntu" ]; then
 	setup_docker_repository
 	addPackages "docker-ce docker-ce-cli containerd.io"
 	if [[ "$dockeronly" == "Y" ]]; then
-		installPackages
+		installPackages $cacheonly
 		exit 0
 	fi
 

@@ -99,16 +99,18 @@ function installPackages
 {
 	_cacheOnly=$1
 	_aptArgs=""	#Arguments for the apt command
-
+	_msg="Installing: 
+	"
 	#Check for cache-only option
 	_aptArgs="-y"
 	if [ "$_cacheOnly" == "Y" ]; then
 		_aptArgs+=" --download-only"
+		_msg="Caching: "
 	fi
 
 	#Install using global variable that has been put through the addPackage process
 	if [ "$aptPackages" != "" ]; then
-		echo "installing: [$aptPackages]"
+		echo "$_msg [$aptPackages]"
 		sudo apt install $_aptArgs $aptPackages
 	else
 		echo "Nothing to install."
