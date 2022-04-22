@@ -11,7 +11,8 @@ function refreshAlias()
 function getBackupFileName() { ls -t /mnt/backup/$1* 2> /dev/null| head -1; }
 
 #Parameter 1: The beginning of the filename (typically a date as yyyymmdd) to restore a specific backup
-function restoreArchive()
+#This is deprecated...
+function restoreArchiveFromMount()
 {
 	local filespec=$1
 	if [ "$filespec" == "" ]; then filespec=$(date +"%Y%m"); fi

@@ -22,7 +22,7 @@ ubuntu="ubuntu"
 redhat="redhat"
 distro=$ubuntu
 hostname=$(hostname)
-dbfilename="2017-04-12-d8dev-0.sql.gz"
+dbfilename=""
 skipLAMP="N"
 LAMPonly="N"
 cacheonly="N"
@@ -53,6 +53,10 @@ while [ "$1" != "" ]; do
 
 		--d8password )	shift
 						d8password=$1
+						;;
+
+		--archive )		shift
+						archive=$1
 						;;
 
 		--dbfilename )	shift
@@ -146,11 +150,16 @@ if [ "$distro" = "$ubuntu" ]; then
 		configure_git
 		setupShare $sharePW
 		createProjectDirs
-		cp sdmiramar.sql ~/web-projects/backup
-		restoreArchive & restoreArchiveProc=$!
-		installComposer & installComposerProc=$!
-		initDatabases & initDatabasesProc=$!
-		wait $installComposerProc $initDatabasesProc 
+		
+		#Old process to restore stuff..
+		#cp $dbfilename ~/web-projects/backup
+
+		if [ -f "$archive" ];then restoreArchive $archive & restoreArchiveProc=$!; fi
+		wait $restoreArchiveProc
+		exit
+		installComposer #& installComposerProc=$!
+		initDatabases #& initDatabasesProc=$!
+		#wait $installComposerProc $initDatabasesProc 
 		
 		configureProjects & configProjectsProc=$!
 		

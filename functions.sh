@@ -311,7 +311,12 @@ function createProjectDirs()
 		if [[ $ans =~ [Yy] ]]; then		
 			echo "Deleting old web-projects."			
 			sudo chown -R	$USER:$USER $HOME/web-projects		
-			rm -rf $HOME/web-projects
+			#Don't delete backup directory to keep files symlinks working.
+			for env in dev stage prod
+			do
+				rm -rf $HOME/web-projects/$env
+			done
+
 		else
 			return
 		fi
@@ -319,8 +324,11 @@ function createProjectDirs()
 
 	#Make project directories -- including intermediate directories.
 	#Need to create all the way to "files" so we can automate symlink to files later
-	echo "Making project directories"
-	mkdir -p $HOME/web-projects/files
+	if [ ! -d $HOME/web-projects/backup/files ]
+	then
+		echo "Making project directories"
+		mkdir -p $HOME/web-projects/backup/files
+	fi
 	
 }
 
@@ -333,7 +341,7 @@ function configureProjects()
 
 	#Now symlink the files directory to the files dir in the backup area:
 	rmdir $projectdir/dev/docroot/sites/default/files
-	ln -s $projectdir/files $projectdir/dev/docroot/sites/default/files 	
+	ln -s $projectdir/backup/files $projectdir/dev/docroot/sites/default/files 	
 	pushd .
 	cd $projectdir/dev
 	git checkout Production
@@ -362,35 +370,70 @@ function configureProjects()
 function configureDrupalSettings()
 {
 	
-	sed "s|\$d8database|d8dev|" settings.php > $HOME/web-projects/dev/docroot/sites/default/settings/dev.settings.php
-	sed "s|\$d8database|d8prod|" settings.php > $HOME/web-projects/prod/docroot/sites/default/settings/prod settings.php
-	sed "s|\$d8database|d8stage|" settings.php > $HOME/web-projects/stage/docroot/sites/default/settings.php
+	for env in dev stage Production
+	do
+		settingsfile=$HOME/web-projects/$env/docroot/sites/default/settings/$env.settings.php
 
-	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/dev/docroot/sites/default/settings.php
-	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/prod/docroot/sites/default/settings.php
-	sed -i "s|\$d8user|${d8user}|" $HOME/web-projects/stage/docroot/sites/default/settings.php
+		sed "s|\$d8database|d8dev|" settings.php > $settingsfile
+		sed -i "s|\$d8user|${d8user}|" $settingsfile
+		sed -i "s|\$d8password|${d8password}|" $settingsfile
+		sed -i "s|\$env|${env}|" $settingsfile
+	done
+}
 
-	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/dev/docroot/sites/default/settings.php
-	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/prod/docroot/sites/default/settings.php
-	sed -i "s|\$d8password|${d8password}|" $HOME/web-projects/stage/docroot/sites/default/settings.php
+
+#Restore an archive into the web-projects/backup directory
+function restoreArchive
+{
+	local _file=$1
+	local _restoredir=$HOME/web-projects/backup
+
+	if [ -f $_file ]
+	then
+		archive=`realpath $_file`
+		pushd $_restoredir > /dev/null
+		echo "Restoring: $_file..."
+		tar -xzf $_file
+		if [ $? != 0 ]; then
+			echo "Failed to untar $_file.  I am bereft of all hope."
+			popd
+			return 5
+		fi
+		sudo chown -R www-data:www-data $_restoredir/files
+		
+		#Set the database backup filename if not already provided...
+		if [ -f sdmiramar.sql ] && [ "$dbfilename" = "" ]
+		then
+			dbfilename=`realpath sdmiramar.sql`
+		fi
+		popd > /dev/null
+		
+	else
+		echo "Archive is gone, like tears in rain..."
+		exit 1
+	fi
 }
 
 function initDatabases()
 {
 
-	echo
-	echo "Creating and restoring databases from: $dbfilename..."
-	sed "s|\$d8user|${d8user}|" createdb.sql > cdb.sql
-	sed -i "s|\$d8password|${d8password}|" cdb.sql
-	
-	mysql -u root --password=$dbpwd < cdb.sql
-	rm cdb.sql
+	if [ "$dbfilename" = "" ]; then
+		echo "No database to restore."
+	else
 
-	#gunzip -c $dbfilename > sdmiramar.sql	
-	mysql -u root --password=$dbpwd d8dev < $dbfilename &> /dev/null & p1=$!
-	mysql -u root --password=$dbpwd d8prod < $dbfilename &> /dev/null & p2=$!
-	mysql -u root --password=$dbpwd d8stage < $dbfilename &> /dev/null & p3=$!
+		echo
+		echo "Creating and restoring databases from: $dbfilename..."
+		sed "s|\$d8user|${d8user}|" createdb.sql > cdb.sql
+		sed -i "s|\$d8password|${d8password}|" cdb.sql
+		
+		mysql -u root --password=$dbpwd < cdb.sql
+		rm cdb.sql
 
+		#gunzip -c $dbfilename > sdmiramar.sql	
+		mysql -u root --password=$dbpwd d8dev < $dbfilename &> /dev/null & p1=$!
+		mysql -u root --password=$dbpwd d8prod < $dbfilename &> /dev/null & p2=$!
+		mysql -u root --password=$dbpwd d8stage < $dbfilename &> /dev/null & p3=$!
+	fi
 }
 
 

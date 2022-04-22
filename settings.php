@@ -6,9 +6,9 @@ if (getenv('SDMC_ENV') === '$ENV') {
     [
       'default' =>
       [
-        'database' => '$DATABASE',
-        'username' => '$USERNAME',
-        'password' => '$PASSWORD',
+        'database' => '$d8database',
+        'username' => '$d8user',
+        'password' => '$d8password',
         'host' => 'localhost',
         'port' => '3306',
         'namespace' => 'Drupal\\Core\\Database\\Driver\\mysql',
@@ -18,10 +18,12 @@ if (getenv('SDMC_ENV') === '$ENV') {
     ],
   ];
 
-  #$config['config_split.config_split.local']['status'] = FALSE;
-  #$config['config_split.config_split.dev']['status'] = TRUE;
-  #$config['config_split.config_split.stage']['status'] = FALSE;
-  #$config['config_split.config_split.prod']['status'] = FALSE;
+  $config['config_split.config_split.local']['status'] = FALSE;
+  $config['config_split.config_split.dev']['status'] = FALSE;
+  $config['config_split.config_split.stage']['status'] = FALSE;
+  $config['config_split.config_split.prod']['status'] = FALSE;
+
+  $config['config_split.config_split.$env']['status'] = FALSE;
 
   $config['google_analytics.settings']['account'] = 'UA-XXXXXXXX-X';
 

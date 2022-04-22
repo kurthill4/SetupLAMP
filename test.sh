@@ -10,3 +10,8 @@ for var in dev stage prod
 do
     echo $var
 done
+
+if [ "Y" = "Y" ]
+then
+    echo "Yeppers"
+fi
