@@ -22,7 +22,7 @@ ubuntu="ubuntu"
 redhat="redhat"
 distro=$ubuntu
 hostname=$(hostname)
-dbfilename=""
+dbfilename="UNK"
 skipLAMP="N"
 LAMPonly="N"
 cacheonly="N"
@@ -154,11 +154,15 @@ if [ "$distro" = "$ubuntu" ]; then
 		#Old process to restore stuff..
 		#cp $dbfilename ~/web-projects/backup
 
-		if [ -f "$archive" ];then restoreArchive $archive & restoreArchiveProc=$!; fi
-		wait $restoreArchiveProc
+		echo "*** $dbfilename ***"
+		if [ -f "$archive" ];then restoreArchive $archive; fi
+		
+		echo "*** $dbfilename ***"
+
+		initDatabases #& initDatabasesProc=$!
 		exit
 		installComposer #& installComposerProc=$!
-		initDatabases #& initDatabasesProc=$!
+		
 		#wait $installComposerProc $initDatabasesProc 
 		
 		configureProjects & configProjectsProc=$!

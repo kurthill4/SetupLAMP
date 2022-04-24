@@ -369,15 +369,20 @@ function configureProjects()
 
 function configureDrupalSettings()
 {
-	
-	for env in dev stage Production
+	local _env
+
+	for _env in dev stage Production
 	do
-		settingsfile=$HOME/web-projects/$env/docroot/sites/default/settings/$env.settings.php
+		local _dir="$HOME/web-projects/$_env/docroot/sites/default/settings"
+		echo "Creating: $_dir"
+		[ ! -d $_dir ] && mkdir $_dir
+		
+		settingsfile=$_dir/$_env.settings.php
 
 		sed "s|\$d8database|d8dev|" settings.php > $settingsfile
 		sed -i "s|\$d8user|${d8user}|" $settingsfile
 		sed -i "s|\$d8password|${d8password}|" $settingsfile
-		sed -i "s|\$env|${env}|" $settingsfile
+		sed -i "s|\$env|${_env}|" $settingsfile
 	done
 }
 
@@ -385,15 +390,17 @@ function configureDrupalSettings()
 #Restore an archive into the web-projects/backup directory
 function restoreArchive
 {
+	echo "    ***[ $dbfilename ]***"
+
 	local _file=$1
 	local _restoredir=$HOME/web-projects/backup
-
+	echo "DB Filename is $dbfilename"
 	if [ -f $_file ]
 	then
-		archive=`realpath $_file`
+		_file=`realpath $_file`
 		pushd $_restoredir > /dev/null
 		echo "Restoring: $_file..."
-		tar -xzf $_file
+		#tar -xzf $_file
 		if [ $? != 0 ]; then
 			echo "Failed to untar $_file.  I am bereft of all hope."
 			popd
@@ -402,9 +409,12 @@ function restoreArchive
 		sudo chown -R www-data:www-data $_restoredir/files
 		
 		#Set the database backup filename if not already provided...
-		if [ -f sdmiramar.sql ] && [ "$dbfilename" = "" ]
+		echo "Checking for sdmiramar.sql in $PWD"
+		if [ -f sdmiramar.sql ] && [ "$dbfilename" = "UNK" ]
 		then
 			dbfilename=`realpath sdmiramar.sql`
+			echo "set DB Filename to $dbfilename"
+			echo "        ***> $dbfilename <***"		
 		fi
 		popd > /dev/null
 		
@@ -412,6 +422,8 @@ function restoreArchive
 		echo "Archive is gone, like tears in rain..."
 		exit 1
 	fi
+
+	echo "    ***[ $dbfilename ]***"
 }
 
 function initDatabases()
