@@ -1,6 +1,6 @@
 <?php
 
-if (getenv('SDMC_ENV') === '$ENV') {
+if (getenv('SDMC_ENV') === '$env') {
   $databases = [
     'default' =>
     [

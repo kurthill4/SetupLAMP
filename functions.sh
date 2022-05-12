@@ -99,6 +99,8 @@ function addPackages
 #Arg1 = cacheonly setting
 function installPackages
 {
+	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
+	
 	_cacheOnly=$1
 	_aptArgs=""	#Arguments for the apt command
 	_msg="Installing: "
@@ -117,6 +119,8 @@ function installPackages
 	else
 		echo "Nothing to install."
 	fi
+
+	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 
 }
 
@@ -141,26 +145,34 @@ function getPassword()
 #Must pass password as first argument.
 function setupShare()
 {
-	if [ "$setupshare" != "Y" ]; then return; fi
-	
-	pw=$1
-	
-	for path in "/root/.cifs" "/mnt/backup"
-	do
-		sudo sh -c "if [ ! -d $path ]; then sudo mkdir $path; fi"
-	done
+	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
 
-	echo "username=backup" >> sdmiramar-backups
-	echo "domain=ics_miramar" >> sdmiramar-backups
-	echo "password=$pw" >> sdmiramar-backups
-	sudo mv sdmiramar-backups /root/.cifs
-	sudo chmod -R 700 /root/.cifs
-
-	if ! grep -q "#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11" /etc/fstab 
+	if [ "$setupshare" == "Y" ]
 	then
-		cat fstab | sudo tee -a /etc/fstab
-		sudo mount -a
+		
+		pw=$1
+		
+		for path in "/root/.cifs" "/mnt/backup"
+		do
+			sudo sh -c "if [ ! -d $path ]; then sudo mkdir $path; fi"
+		done
+
+		echo "username=backup" >> sdmiramar-backups
+		echo "domain=ics_miramar" >> sdmiramar-backups
+		echo "password=$pw" >> sdmiramar-backups
+		sudo mv sdmiramar-backups /root/.cifs
+		sudo chmod -R 700 /root/.cifs
+
+		if ! grep -q "#SCRIPTID: 6581a047-37eb-4384-b15d-14478317fb11" /etc/fstab 
+		then
+			cat fstab | sudo tee -a /etc/fstab
+			sudo mount -a
+		fi
+	else
+		echo "Skipping share setup."
 	fi
+
+	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 
 }
 
@@ -189,7 +201,9 @@ function ubuntuAddPackages()
 	if [ "$LAMPonly" != "Y" ]; then packages="samba cifs-utils"; fi
 	
 	if [ "$skipLAMP" != "Y" ]; then	
-		packages="$packages php7.4 php7.4-mysql php7.4-xml php7.4-cli php-gd php-mbstring php-curl mysql-server-8.0 mysql-client-8.0 apache2 libapache2-mod-php7.4 php-zip"
+		packages="$packages php7.4 php7.4-mysql php7.4-xml php7.4-cli php-gd php-mbstring php-curl"
+		packages="$packages mysql-server-8.0 mysql-client-8.0 apache2 libapache2-mod-php7.4 php-zip"
+		packages="$packages npm"
 
 		# Set default password for MySQL so install script does not hang in the middle waiting for user input.
 		sudo debconf-set-selections <<< "mysql-server mysql-server/root_password select $dbpwd"
@@ -283,6 +297,8 @@ function self_sign()
 
 function installComposer()
 {
+	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
+
 	echo "Installing Composer..."
 	#Install composer version 1 using the --1 option
 	#url="https://getcomposer.org/download/latest-1.x/composer.phar"
@@ -298,12 +314,17 @@ function installComposer()
 	if [[ "$cacheonly" == "N" ]]; then
 		sudo php ./installer --install-dir=/usr/local/bin --filename=composer --1
 		rm installer
-		sudo chown -R $USER:$USER $HOME/.composer
+		#This may not be needed...
+		#sudo chown -R $USER:$USER $HOME/.cache/composer
 	fi
+	
+	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 }	
 
 function createProjectDirs()
 {
+	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
+
 	echo "Configuring project directories..."
 	if [ -d $HOME/web-projects ]; then
 		echo "Directory exists!"; jobs
@@ -318,6 +339,7 @@ function createProjectDirs()
 			done
 
 		else
+			[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 			return
 		fi
 	fi
@@ -329,32 +351,66 @@ function createProjectDirs()
 		echo "Making project directories"
 		mkdir -p $HOME/web-projects/backup/files
 	fi
-	
+
+	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"	
+}
+
+function configureNPM()
+{
+	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
+	local _projectdir=$1/docroot/themes/custom/sdmc
+	pushd $_projectdir
+	npm install
+	npm run build
+	popd
+	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"	
 }
 
 function configureProjects()
 {
+	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
+
 	projectdir=$HOME/web-projects
 	
-	echo "Cloning website repositories (dev, stage, prod)..."
-	git clone $repository $projectdir/dev
+	if [ ! -d $projectdir/dev ]
+	then
+		#Get the dev directory configured fully, then copy it to prog/stage
+		# 1. Clone
+		# 2. Checkout Production
+		# 3. Composer install
+		# 4. Configure npm stull
+		# 5. Create linked files directory
 
-	#Now symlink the files directory to the files dir in the backup area:
-	rmdir $projectdir/dev/docroot/sites/default/files
-	ln -s $projectdir/backup/files $projectdir/dev/docroot/sites/default/files 	
-	pushd .
-	cd $projectdir/dev
-	git checkout Production
-	composer install --no-dev
-	popd
 
-	#Just copy the repository for the stage/prod sites
-	cp -r $projectdir/dev $projectdir/stage > /dev/null & p1=$!
-	cp -r $projectdir/dev $projectdir/prod  > /dev/null & p2=$!
+		#Link files directory to restored archive
+		echo "Cloning website repository..."
+		git clone $repository $projectdir/dev
 
-	echo "Waiting for copies ($p1, $p2) to finish."
-	wait $p1 $p2
-	
+		#Now go to tip of production and get all dependencies
+		pushd $projectdir/dev > /dev/null
+		git checkout Production
+		composer install --no-dev & p1=$!
+		cd $projectdir/dev/docroot/themes/custom/sdmc
+		configureNPM $projectdir/dev & p2=$!
+		popd > /dev/null
+
+		#Now symlink the files directory to the files dir in the backup area:
+		filedir=$projectdir/dev/docroot/sites/default/files
+		[[ -d $filedir ]] && rmdir $filedir
+		ln -s $projectdir/backup/files $filedir
+
+		echo "Waiting for composer/npm processes to finish..."
+		wait $p1 $p2
+	fi
+
+	#Just copy the repository for the stage/prod sites if they do not already exist
+	if [ ! -d $projectdir/stage ]; then cp -r $projectdir/dev $projectdir/stage > /dev/null & p1=$!; fi
+	if [ ! -d $projectdir/prod ]; then cp -r $projectdir/dev $projectdir/prod  > /dev/null & p2=$!; fi
+
+	#echo "Waiting for copies ($p1, $p2) to finish."
+	#wait $p1 $p2
+	#echo "Copies finished"
+
 	#echo "Checking out Production repo state and running Composer..."
 	#pushd . > /dev/null
 	#The first will populate the cache...  The others can then go concurrently (in theory...)
@@ -365,13 +421,17 @@ function configureProjects()
 	#popd > /dev/null
 	#echo "Waiting for composer processes ($$p1 and $p2) to finish."
 	#wait $p1 $p2
+
+	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 }
 
 function configureDrupalSettings()
 {
+	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
+
 	local _env
 
-	for _env in dev stage Production
+	for _env in dev stage prod
 	do
 		local _dir="$HOME/web-projects/$_env/docroot/sites/default/settings"
 		echo "Creating: $_dir"
@@ -384,12 +444,15 @@ function configureDrupalSettings()
 		sed -i "s|\$d8password|${d8password}|" $settingsfile
 		sed -i "s|\$env|${_env}|" $settingsfile
 	done
+	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 }
 
 
 #Restore an archive into the web-projects/backup directory
 function restoreArchive
 {
+	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
+
 	echo "    ***[ $dbfilename ]***"
 
 	local _file=$1
@@ -424,12 +487,14 @@ function restoreArchive
 	fi
 
 	echo "    ***[ $dbfilename ]***"
+	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 }
 
 function initDatabases()
 {
+	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
 
-	if [ "$dbfilename" = "" ]; then
+	if [ "$dbfilename" = "" ] || [ "$dbfilename" = "UNK" ]; then
 		echo "No database to restore."
 	else
 
@@ -441,11 +506,14 @@ function initDatabases()
 		mysql -u root --password=$dbpwd < cdb.sql
 		rm cdb.sql
 
-		#gunzip -c $dbfilename > sdmiramar.sql	
+		#gunzip -c $dbfilename > sdmiramar.sql
+		echo "Restoring $dbfilename..."	
 		mysql -u root --password=$dbpwd d8dev < $dbfilename &> /dev/null & p1=$!
 		mysql -u root --password=$dbpwd d8prod < $dbfilename &> /dev/null & p2=$!
 		mysql -u root --password=$dbpwd d8stage < $dbfilename &> /dev/null & p3=$!
+		
 	fi
+	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 }
 
 

@@ -17,7 +17,7 @@
 #LAMPonly:		Skips all web/database configuration steps.
 
 
-
+debug="Y"
 ubuntu="ubuntu"
 redhat="redhat"
 distro=$ubuntu
@@ -150,21 +150,24 @@ if [ "$distro" = "$ubuntu" ]; then
 		#Old process to restore stuff..
 		#cp $dbfilename ~/web-projects/backup
 
-		echo "*** $dbfilename ***"
 		if [ -f "$archive" ];then restoreArchive $archive; fi
-		
-		echo "*** $dbfilename ***"
+
 
 		initDatabases #& initDatabasesProc=$!
-		exit
 		installComposer #& installComposerProc=$!
 		
 		#wait $installComposerProc $initDatabasesProc 
 		
-		configureProjects & configProjectsProc=$!
+		configureProjects #& configProjectsProc=$!
 		
-		wait $configProjectsProc $restoreDatabaseProc
-		restoreDatabase prod & restoreDatabaseProc=$!
+		#The script used to restore only the initial database in the initDatabase call,
+		#No it will restore the database from the archive, so this is no longer needed.
+		#restoreDatabase prod #& restoreDatabaseProc=$!
+		
+		#Wait for any outstanding stuff to finish
+		echo "Waiting for any background jobs to complete..."
+		wait #$configProjectsProc $restoreDatabaseProc
+		
 		configureDrupalSettings
 		configure_apache
 		sudo apache2ctl restart

@@ -21,6 +21,7 @@ function pre_install
 #TODO: 
 function setup_docker_repository 
 {
+    [[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
     local _result=0
 
     echo Installing Docker Repositories.
@@ -62,6 +63,8 @@ function setup_docker_repository
     fi
 
     sudo apt-get update
+    
+    [[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 }
 
 #Function not needed

@@ -52,6 +52,8 @@ function restoreArchiveFromMount()
 #		Typically restoreArchive does this first.
 function restoreDatabase()
 {
+	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
+
 	restoredir=~/web-projects/backup
 	db="d8$1"
 	
@@ -78,15 +80,17 @@ function restoreDatabase()
 	#mysql -u root -p$sqlpwd $db < sdmiramar.sql
 	mysql $db < sdmiramar.sql
 
-	if [ -d ~/web-projects/$1 ];
-	then
-		pushd ~/web-projects/$1 > /dev/null
-		sudo rm -rf ~/web-projects/$1/web/sites/default/files
-		sudo ln -s ~/web-projects/backup/web/sites/default/files web/sites/default/files
-		popd > /dev/null
-	fi;
+	#if [ -d ~/web-projects/$1 ];
+	#then
+	#		pushd ~/web-projects/$1 > /dev/null
+	#	sudo rm -rf ~/web-projects/$1/web/sites/default/files
+	#	sudo ln -s ~/web-projects/backup/web/sites/default/files web/sites/default/files
+	#	popd > /dev/null
+	#fi;
 
 	popd > /dev/null
+
+	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 }
 
 function dr()
