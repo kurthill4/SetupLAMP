@@ -439,7 +439,7 @@ function configureDrupalSettings()
 		
 		settingsfile=$_dir/$_env.settings.php
 
-		sed "s|\$d8database|d8dev|" settings.php > $settingsfile
+		sed "s|\$d8database|d8dev|" env.settings.php > $settingsfile
 		sed -i "s|\$d8user|${d8user}|" $settingsfile
 		sed -i "s|\$d8password|${d8password}|" $settingsfile
 		sed -i "s|\$env|${_env}|" $settingsfile

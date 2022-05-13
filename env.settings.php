@@ -18,6 +18,7 @@ if (getenv('SDMC_ENV') === '$env') {
     ],
   ];
 
+  $settings['trusted_host_patterns'] = [ '^$env\.loc$ ]; 
   $config['config_split.config_split.local']['status'] = FALSE;
   $config['config_split.config_split.dev']['status'] = FALSE;
   $config['config_split.config_split.stage']['status'] = FALSE;
