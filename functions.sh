@@ -476,7 +476,7 @@ function restoreArchive
 		_file=`realpath $_file`
 		pushd $_restoredir > /dev/null
 		echo "Restoring: $_file..."
-		#tar -xzf $_file
+		tar -xzf $_file
 		if [ $? != 0 ]; then
 			echo "Failed to untar $_file.  I am bereft of all hope."
 			popd
