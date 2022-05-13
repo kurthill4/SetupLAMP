@@ -193,7 +193,6 @@ function addBashAliases()
 	fi
 }
 
-
 #This function handles the skipLAMP/LAMPonly flags.
 ##Arg1 = cacheonly flag
 function ubuntuAddPackages()
@@ -269,7 +268,7 @@ function configure_apache()
 		sudo sed -i "s|\/\$home|${HOME}|g" $filename
 		sudo sed -i "s|\/\$site|/$site|g" $filename
 		sudo sed -i "s|\$servername|$servername|g" $filename
-		sudo sed -i "s|\$env|$env|g" $filename
+		sudo sed -i "s|\$env|$site|g" $filename
 		
 		sudo a2ensite $conffile &> /dev/null
 		
@@ -282,7 +281,7 @@ function configure_apache()
 		sudo sed -i "s|\/\$home|${HOME}|g" $filename
 		sudo sed -i "s|\/\$site|/$site|g" $filename
 		sudo sed -i "s|\$servername|$servername|g" $filename
-		sudo sed -i "s|\$env|$env|g" $filename
+		sudo sed -i "s|\$env|$site|g" $filename
 		
 		sudo a2ensite $conffile &> /dev/null
 
