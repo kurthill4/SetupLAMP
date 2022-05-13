@@ -243,17 +243,16 @@ function configure_apache()
 	
 	addHosts
 
-	sudo cp 101-dev.conf   /etc/apache2/sites-available
-	sudo cp 102-stage.conf /etc/apache2/sites-available
-	sudo cp 103-prod.conf  /etc/apache2/sites-available
+	#sudo cp 101-dev.conf   /etc/apache2/sites-available
+	#sudo cp 102-stage.conf /etc/apache2/sites-available
+	#sudo cp 103-prod.conf  /etc/apache2/sites-available
 
-	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/101-dev.conf
-	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/102-stage.conf
-	sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/103-prod.conf
+	#sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/101-dev.conf
+	#sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/102-stage.conf
+	#sudo sed -i "s|\/\$HOME|${HOME}|g" /etc/apache2/sites-available/103-prod.conf
 
-	sudo a2ensite 101-dev 102-stage 103-prod &> /dev/null
+	#sudo a2ensite 101-dev 102-stage 103-prod &> /dev/null
 
-	#Now the SSL versions
 	self_sign '/etc/apache2' '/CN=*'
 	
 	sitenum=100
@@ -261,14 +260,29 @@ function configure_apache()
 	do
 
 		((sitenum++))
+		
+		conffile=$sitenum-$site.conf
+		filename=/etc/apache2/sites-available/$conffile
+		servername=$site.loc
+
+		sudo cp env.conf  $filename
+		sudo sed -i "s|\/\$home|${HOME}|g" $filename
+		sudo sed -i "s|\/\$site|/$site|g" $filename
+		sudo sed -i "s|\$servername|$servername|g" $filename
+		sudo sed -i "s|\$env|$env|g" $filename
+		
+		sudo a2ensite $conffile &> /dev/null
+		
+		
 		conffile=$sitenum-$site-ssl.conf
 		filename=/etc/apache2/sites-available/$conffile
 		servername=$site.loc
 
-		sudo cp ssl.conf  $filename
-		sudo sed -i "s|\/\$HOME|${HOME}|g" $filename
-		sudo sed -i "s|\/\$SITE|/$site|g" $filename
-		sudo sed -i "s|\$SERVERNAME|$servername|g" $filename
+		sudo cp env.ssl.conf  $filename
+		sudo sed -i "s|\/\$home|${HOME}|g" $filename
+		sudo sed -i "s|\/\$site|/$site|g" $filename
+		sudo sed -i "s|\$servername|$servername|g" $filename
+		sudo sed -i "s|\$env|$env|g" $filename
 		
 		sudo a2ensite $conffile &> /dev/null
 
