@@ -24,7 +24,7 @@ if (getenv('SDMC_ENV') === '$env') {
   $config['config_split.config_split.stage']['status'] = FALSE;
   $config['config_split.config_split.prod']['status'] = FALSE;
 
-  $config['config_split.config_split.$env']['status'] = FALSE;
+  $config['config_split.config_split.$env']['status'] = TRUE;
 
   $config['google_analytics.settings']['account'] = 'UA-XXXXXXXX-X';
 
