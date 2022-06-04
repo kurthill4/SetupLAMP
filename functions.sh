@@ -202,7 +202,7 @@ function ubuntuAddPackages()
 	if [ "$skipLAMP" != "Y" ]; then	
 		packages="$packages php7.4 php7.4-mysql php7.4-xml php7.4-cli php-gd php-mbstring php-curl"
 		packages="$packages mysql-server-8.0 mysql-client-8.0 apache2 libapache2-mod-php7.4 php-zip"
-		packages="$packages npm"
+		packages="$packages npm memcached"
 
 		# Set default password for MySQL so install script does not hang in the middle waiting for user input.
 		sudo debconf-set-selections <<< "mysql-server mysql-server/root_password select $dbpwd"
