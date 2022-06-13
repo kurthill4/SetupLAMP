@@ -108,61 +108,79 @@ distro=$(echo $distro | tr '[:upper:]' '[:lower:]')
 ubuntu=$(echo $ubuntu | tr '[:upper:]' '[:lower:]')
 redhat=$(echo $redhat | tr '[:upper:]' '[:lower:]')
 
-if [[ "$cacheonly" = "N" ]]; then
-	if [ "$dbpwd" = "" ]; then
-		echo "Must set a database password!"
-		exit 2
-	fi
-
-	if [ "$d8user" = "" ]; then
-		echo no user!
-		d8user="drupal"
-	fi
-
-	if [ "$d8password" = "" ]; then
-		d8password="password"
-	fi
-
-	echo D8 User: $d8user, password: $d8password
-
-	echo "Creating bash aliases..."
-	addBashAliases
+if [[ "$cacheonly" = "Y" ]]; then
+	#Add the docker repositories, generate package list then cache & exit
+	setup_docker_repository
+	addPackages "docker-ce docker-ce-cli containerd.io"
+	ubuntuAddPackages
+	installPackages $cacheonly
+	exit 0
 fi
 
-#The ubunto_install_packages handles the LAMP flags (skipLAMP/LAMPonly)
-if [ "$distro" = "$ubuntu" ]; then
+if [ "$dbpwd" = "" ]; then
+	echo "Must set a database password!"
+	exit 2
+fi
 
-	#Add the docker repositories, generate package list then install, or cache & exit
+if [ "$d8user" = "" ]; then
+	echo no user!
+	d8user="drupal"
+fi
+
+if [ "$d8password" = "" ]; then
+	d8password="password"
+fi
+
+echo D8 User: $d8user, password: $d8password
+
+echo "Creating bash aliases..."
+addBashAliases
+
+
+#The ubuntu_install_packages handles the LAMP flags (skipLAMP/LAMPonly)
+if [ "$distro" = "$ubuntu" ]; then
+	createProjectDirs
+	if [ -f "$archive" ]; then
+		restoreArchive $archive & restoreArchiveProc=$!
+	fi
+
+	#Add the docker repositories, generate package list then install.
 	setup_docker_repository
 	addPackages "docker-ce docker-ce-cli containerd.io"
 	[[ "$dockeronly" != "Y" ]] && ubuntuAddPackages
-	installPackages $cacheonly
-	[[ "$cacheonly" = "Y" ]] && exit 0
-
+	installPackages $cacheonly & installPackagesProc=$!
 
 	if [ "$LAMPonly" != "Y" ]; then
 		echo "Stopping apache."
 		sudo apache2ctl stop &> /dev/null
 		configure_git
 		setupShare $sharePW
-		createProjectDirs
-		
-		#Old process to restore stuff..
-		#cp $dbfilename ~/web-projects/backup
+		installComposer & installComposerProc=$!
 
-		if [ -f "$archive" ];then restoreArchive $archive; fi
+		echo "Waiting for restoreArchiveProc, installPackagesProc ($restoreArchiveProc, $installPackagesProc) to finish..."
+		wait $restoreArchiveProc
+		wait $installPackagesProc
 
+		#Set the database backup filename if not already provided...
+		#We must do this here since the untar is ran in the background...
+		pushd $HOME/web-projects/backup
+		echo "Checking for sdmiramar.sql in $PWD"
+		if [ -f sdmiramar.sql ] && [ "$dbfilename" = "UNK" ]; then
+			dbfilename=`realpath sdmiramar.sql`
+			echo "set DB Filename to $dbfilename"
+		fi
+		popd
 
 		initDatabases #& initDatabasesProc=$!
-		installComposer #& installComposerProc=$!
 		
-		#wait $installComposerProc $initDatabasesProc 
 		
-		configureProjects #& configProjectsProc=$!
+		wait $installComposerProc
 		
-		#The script used to restore only the initial database in the initDatabase call,
-		#No it will restore the database from the archive, so this is no longer needed.
-		#restoreDatabase prod #& restoreDatabaseProc=$!
+		configureProjects & configProjectsProc=$!
+		echo "***************************************************************"
+		sg docker "docker pull memcached"
+		sg docker "docker run --name memcache --restart always -p 11211:11211 -d memcached"
+		echo "***************************************************************"
 		
 		#Wait for any outstanding stuff to finish
 		echo "Waiting for any background jobs to complete..."

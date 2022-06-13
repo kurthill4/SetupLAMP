@@ -373,8 +373,9 @@ function configureNPM()
 	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
 	local _projectdir=$1/docroot/themes/custom/sdmc
 	pushd $_projectdir
-	npm install
-	npm run build
+	echo "Running npm install then build."
+	npm install > /dev/null 2>&1
+	npm run build > /dev/null 2>&1
 	popd
 	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"	
 }
@@ -402,7 +403,7 @@ function configureProjects()
 		#Now go to tip of production and get all dependencies
 		pushd $projectdir/dev > /dev/null
 		git checkout Production
-		composer install --no-dev & p1=$!
+		composer install --no-dev > /dev/null 2>&1 & p1=$!
 		cd $projectdir/dev/docroot/themes/custom/sdmc
 		configureNPM $projectdir/dev & p2=$!
 		popd > /dev/null
@@ -420,20 +421,9 @@ function configureProjects()
 	if [ ! -d $projectdir/stage ]; then cp -r $projectdir/dev $projectdir/stage > /dev/null & p1=$!; fi
 	if [ ! -d $projectdir/prod ]; then cp -r $projectdir/dev $projectdir/prod  > /dev/null & p2=$!; fi
 
-	#echo "Waiting for copies ($p1, $p2) to finish."
-	#wait $p1 $p2
-	#echo "Copies finished"
-
-	#echo "Checking out Production repo state and running Composer..."
-	#pushd . > /dev/null
-	#The first will populate the cache...  The others can then go concurrently (in theory...)
-	#cd $HOME/web-projects/dev;   git checkout Production &> /dev/null; composer install --no-dev & p0=$!
-
-	#cd $HOME/web-projects/stage; git checkout Production &> /dev/null; composer install --no-dev &> /dev/null & p1=$!
-	#cd $HOME/web-projects/prod;  git checkout Production &> /dev/null; composer install --no-dev &> /dev/null & p2=$!
-	#popd > /dev/null
-	#echo "Waiting for composer processes ($$p1 and $p2) to finish."
-	#wait $p1 $p2
+	echo "Waiting for copies ($p1, $p2) to finish."
+	wait $p1 $p2
+	echo "Copies finished"
 
 	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 }
@@ -466,11 +456,9 @@ function restoreArchive
 {
 	[[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
 
-	echo "    ***[ $dbfilename ]***"
-
 	local _file=$1
 	local _restoredir=$HOME/web-projects/backup
-	echo "DB Filename is $dbfilename"
+
 	if [ -f $_file ]
 	then
 		_file=`realpath $_file`
@@ -484,14 +472,9 @@ function restoreArchive
 		fi
 		sudo chown -R www-data:www-data $_restoredir/files
 		
-		#Set the database backup filename if not already provided...
-		echo "Checking for sdmiramar.sql in $PWD"
-		if [ -f sdmiramar.sql ] && [ "$dbfilename" = "UNK" ]
-		then
-			dbfilename=`realpath sdmiramar.sql`
-			echo "set DB Filename to $dbfilename"
-			echo "        ***> $dbfilename <***"		
-		fi
+		#We cannot set the database backup filename here since this is probably
+		#being run as a background process
+
 		popd > /dev/null
 		
 	else
@@ -499,7 +482,6 @@ function restoreArchive
 		exit 1
 	fi
 
-	echo "    ***[ $dbfilename ]***"
 	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 }
 

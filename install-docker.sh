@@ -6,11 +6,12 @@
 arrScriptsLoaded+=("b6153465-48c2-440a-964f-427c7aca895c")
 [[ "${arrScriptsLoaded[@]}" =~ "6581a047-37eb-4384-b15d-14478317fb11" ]] || source functions.sh
 
-
-
-
+#TODO: Is this even needed?
 function pre_install 
 {
+    echo "Depricated function called: pre_install in install-docker.sh"
+    exit
+
     #This was the original set of packages:
     #apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release cifs-utils git
 
@@ -61,24 +62,12 @@ function setup_docker_repository
     else
         echo $repo | sudo tee $file > /dev/null
     fi
-
-    sudo apt-get update
     
+    sudo apt update
+    sudo groupadd docker
+    sudo usermod -a -G docker $USER
+
     [[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
-}
-
-#Function not needed
-function install_docker
-{
-    _cacheOnly=$1
-
-    if [[ $(id -u) -ne 0 ]] ; then echo "Please run as root" ; exit 1 ; fi
-
-    #Set up the Docker GPG keys and add the Docker repository
-    setup_docker_repository
-    echo Installing Docker engine.
-    addPackages "docker-ce docker-ce-cli containerd.io"
-    installPackages $_cacheOnly
 }
 
 function setup_registry
