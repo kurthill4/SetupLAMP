@@ -90,6 +90,9 @@ while [ "$1" != "" ]; do
 		--offline )		offline="Y"
 						;;
 
+		--nopackages )	nopackages="Y"
+						;;
+
 		#TODO: Deprecate noninstall; same as cacheonly
 		#--noinstall )	noinstall="Y"
 		#				;;
@@ -155,7 +158,7 @@ if [ "$distro" = "$ubuntu" ]; then
 		sudo apache2ctl stop &> /dev/null
 		configure_git
 		setupShare $sharePW
-		installComposer & installComposerProc=$!
+		installComposer #& installComposerProc=$!
 
 		echo "Waiting for restoreArchiveProc, installPackagesProc ($restoreArchiveProc, $installPackagesProc) to finish..."
 		wait $restoreArchiveProc

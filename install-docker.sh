@@ -25,6 +25,11 @@ function setup_docker_repository
     [[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
     local _result=0
 
+    if [ "$nopackages" == "Y" ]; then
+        echo "Skipping docker install (nopackages is TRUE)"
+        return 0
+    fi
+
     echo Installing Docker Repositories.
 
     #Add git repository to get the very latest version of git.

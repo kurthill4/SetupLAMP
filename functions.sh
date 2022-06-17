@@ -113,11 +113,16 @@ function installPackages
 	fi
 
 	#Install using global variable that has been put through the addPackage process
-	if [ "$aptPackages" != "" ]; then
-		echo "$_msg [$aptPackages]"
-		sudo apt install $_aptArgs $aptPackages
+	if [ "$nopackages" == "Y" ]; then
+		echo "Skipping package installs."
+		return 0
 	else
-		echo "Nothing to install."
+		if [ "$aptPackages" != "" ]; then
+			echo "$_msg [$aptPackages]"
+			sudo apt install $_aptArgs $aptPackages
+		else
+			echo "Nothing to install."
+		fi
 	fi
 
 	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
@@ -316,12 +321,18 @@ function installComposer()
 	#Install composer version 1 using the --1 option
 	#url="https://getcomposer.org/download/latest-1.x/composer.phar"
 	url="https://getcomposer.org/installer"
-	[[ "$offline" == "N" ]] && wget -o /dev/null -O installer $url
-	if [[ $? != 0 && ! -f installer ]]; then
-		echo "Error downloading composer installer, and no cached copy exists.  My soul weeps."
-		exit 1
-	else
-		echo "Error downloading composer installer.  Using a cached copy."
+	if [[ "$offline" == "N" ]]; then
+		wget -o /dev/null -O installer $url
+		local _result=$?
+	fi
+
+	if [[ $_result != 0 ]]; then
+		if [[ ! -f installer ]]; then
+			echo "Error downloading composer installer, and no cached copy exists.  My soul weeps."
+			exit 1
+		else
+			echo "Error downloading composer installer.  Using a cached copy."
+		fi
 	fi
 
 	if [[ "$cacheonly" == "N" ]]; then
