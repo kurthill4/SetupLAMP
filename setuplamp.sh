@@ -151,18 +151,18 @@ if [ "$distro" = "$ubuntu" ]; then
 	setup_docker_repository
 	addPackages "docker-ce docker-ce-cli containerd.io"
 	[[ "$dockeronly" != "Y" ]] && ubuntuAddPackages
-	installPackages $cacheonly & installPackagesProc=$!
+	installPackages $cacheonly #& installPackagesProc=$!
 
 	if [ "$LAMPonly" != "Y" ]; then
 		echo "Stopping apache."
 		sudo apache2ctl stop &> /dev/null
 		configure_git
 		setupShare $sharePW
-		installComposer #& installComposerProc=$!
+		installComposer 
 
-		echo "Waiting for restoreArchiveProc, installPackagesProc ($restoreArchiveProc, $installPackagesProc) to finish..."
+		echo "Waiting for restoreArchiveProc ($restoreArchiveProc) to finish..."
 		wait $restoreArchiveProc
-		wait $installPackagesProc
+
 
 		#Set the database backup filename if not already provided...
 		#We must do this here since the untar is ran in the background...

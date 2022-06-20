@@ -120,6 +120,11 @@ function installPackages
 		if [ "$aptPackages" != "" ]; then
 			echo "$_msg [$aptPackages]"
 			sudo apt install $_aptArgs $aptPackages
+			local _result=$?
+			if [ $_result != 0 ]; then
+				echo "Error installing packages."
+				exit 1
+			fi
 		else
 			echo "Nothing to install."
 		fi
