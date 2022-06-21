@@ -93,6 +93,11 @@ while [ "$1" != "" ]; do
 		--nopackages )	nopackages="Y"
 						;;
 
+		--nodeversion )	shift
+						nodeVersion=$1
+						;;
+
+
 		#TODO: Deprecate noninstall; same as cacheonly
 		#--noinstall )	noinstall="Y"
 		#				;;
@@ -113,7 +118,9 @@ redhat=$(echo $redhat | tr '[:upper:]' '[:lower:]')
 
 if [[ "$cacheonly" = "Y" ]]; then
 	#Add the docker repositories, generate package list then cache & exit
-	setup_docker_repository
+	setupDockerRepository
+	setupNodeRepository
+	
 	addPackages "docker-ce docker-ce-cli containerd.io"
 	ubuntuAddPackages
 	installPackages $cacheonly

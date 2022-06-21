@@ -7,7 +7,7 @@ arrScriptsLoaded+=("b6153465-48c2-440a-964f-427c7aca895c")
 [[ "${arrScriptsLoaded[@]}" =~ "6581a047-37eb-4384-b15d-14478317fb11" ]] || source functions.sh
 
 #TODO: Is this even needed?
-function pre_install 
+function preInstall 
 {
     echo "Depricated function called: pre_install in install-docker.sh"
     exit
@@ -20,7 +20,7 @@ function pre_install
 }
 
 #TODO: 
-function setup_docker_repository 
+function setupDockerRepository 
 {
     [[ "$debug" == "Y" ]] && echo "*** Entering function: ${FUNCNAME[0]}"
     local _result=0
@@ -75,7 +75,7 @@ function setup_docker_repository
     [[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 }
 
-function setup_registry
+function setupRegistry
 {
     echo Setting up Local Registry.
 
