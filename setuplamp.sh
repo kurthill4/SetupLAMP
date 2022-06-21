@@ -116,16 +116,15 @@ distro=$(echo $distro | tr '[:upper:]' '[:lower:]')
 ubuntu=$(echo $ubuntu | tr '[:upper:]' '[:lower:]')
 redhat=$(echo $redhat | tr '[:upper:]' '[:lower:]')
 
-if [[ "$cacheonly" = "Y" ]]; then
-	#Add the docker repositories, generate package list then cache & exit
-	setupDockerRepository
-	setupNodeRepository
-	
-	addPackages "docker-ce docker-ce-cli containerd.io"
-	ubuntuAddPackages
-	installPackages $cacheonly
-	exit 0
-fi
+#Add the docker repositories, generate package list then cache & exit
+#NOTE: the script to setup the Node.js PPA will run apt-get update
+setupDockerRepository
+setupNodeRepository
+addPackages "docker-ce docker-ce-cli containerd.io"
+if [[ "$dockeronly" != "Y" ]] && ubuntuAddPackages
+
+installPackages $cacheonly
+if [[ "$cacheonly" == "Y" || "$dockeronly" == "Y" ]]; then exit 0; fi
 
 if [ "$dbpwd" = "" ]; then
 	echo "Must set a database password!"
@@ -154,16 +153,11 @@ if [ "$distro" = "$ubuntu" ]; then
 		restoreArchive $archive & restoreArchiveProc=$!
 	fi
 
-	#Add the docker repositories, generate package list then install.
-	setup_docker_repository
-	addPackages "docker-ce docker-ce-cli containerd.io"
-	[[ "$dockeronly" != "Y" ]] && ubuntuAddPackages
-	installPackages $cacheonly #& installPackagesProc=$!
-
 	if [ "$LAMPonly" != "Y" ]; then
 		echo "Stopping apache."
 		sudo apache2ctl stop &> /dev/null
-		configure_git
+		setupContainers
+		configureGit
 		setupShare $sharePW
 		installComposer 
 
@@ -184,7 +178,7 @@ if [ "$distro" = "$ubuntu" ]; then
 		initDatabases #& initDatabasesProc=$!
 		
 		
-		wait $installComposerProc
+		#wait $installComposerProc
 		
 		configureProjects & configProjectsProc=$!
 		echo "***************************************************************"
