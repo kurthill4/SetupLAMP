@@ -226,10 +226,12 @@ function ubuntuAddPackages()
 }
 
 #Install PPA for node.js
-function installNodeRepository()
+function setupNodeRepository()
 {
-	#Default version is "lts"
-	if [ "$nodeVersion" == ""]; then $nodeVersion="lts"; fi
+	#If node version is not specified, use system default repository...
+	if [ "$nodeVersion" == "" ]; then return 0; fi
+	echo "Installing node.js version: $nodeVersion"
+
 	$nodeVersion="setup_$nodeVersion.x"
 	$url="https://deb.nodesource.com/$nodeVersion"
 
@@ -245,7 +247,7 @@ function installNodeRepository()
 	rm nodePrep.sh
 }
 
-function configure_git
+function configureGit
 {
 	git config --global --bool core.autocrlf false
 	git config --global --bool core.safecrlf false
@@ -410,8 +412,8 @@ function configureNPM()
 	local _projectdir=$1/docroot/themes/custom/sdmc
 	pushd $_projectdir
 	echo "Running npm install then build."
-	npm install > /dev/null 2>&1
-	npm run build > /dev/null 2>&1
+	npm install 	#> /dev/null 2>&1
+	npm run build 	#> /dev/null 2>&1
 	popd
 	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"	
 }
@@ -547,6 +549,15 @@ function initDatabases()
 	[[ "$debug" == "Y" ]] && echo "*** Exiting function: ${FUNCNAME[0]}"
 }
 
+function setupContainers
+{
+
+	echo "***************************************************************"
+	sg docker "docker pull memcached"
+	sg docker "docker run --name memcache --restart always -p 11211:11211 -d memcached"
+	echo "***************************************************************"
+
+}
 
 #------------------------------------------------------------------------------------------------------------------------------
 # Functions to automate updating the project to work with OS updates, core updates, etc.
