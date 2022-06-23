@@ -228,8 +228,8 @@ function ubuntuAddPackages()
 #Install PPA for node.js
 function installNodeRepository()
 {
-	#Default version is "lts"
-	if [ "$nodeVersion" == ""]; then $nodeVersion="lts"; fi
+	#If node version is not specified, use system default repository...
+	if [ "$nodeVersion" == ""]; then return 0; fi
 	$nodeVersion="setup_$nodeVersion.x"
 	$url="https://deb.nodesource.com/$nodeVersion"
 
