@@ -229,7 +229,11 @@ function ubuntuAddPackages()
 function setupNodeRepository()
 {
 	#If node version is not specified, use system default repository...
-	if [ "$nodeVersion" == "" ]; then return 0; fi
+	if [ "$nodeVersion" == "" ]; then
+		addPackages "npm"
+		return 0
+	fi
+
 	echo "Installing node.js version: $nodeVersion"
 
 	$nodeVersion="setup_$nodeVersion.x"
@@ -243,8 +247,10 @@ function setupNodeRepository()
 
 	#This avoids a chmod to make the file executable
 	cat nodePrep.sh | sudo -E bash -
-
 	rm nodePrep.sh
+
+	#Don't add npm, as the new repository installs npm as part of nodejs.
+	addPackage "nodejs"
 }
 
 function configureGit
