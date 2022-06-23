@@ -120,8 +120,9 @@ redhat=$(echo $redhat | tr '[:upper:]' '[:lower:]')
 #NOTE: the script to setup the Node.js PPA will run apt-get update
 setupDockerRepository
 setupNodeRepository
+
 addPackages "docker-ce docker-ce-cli containerd.io"
-if [[ "$dockeronly" != "Y" ]] && ubuntuAddPackages
+[[ "$dockeronly" != "Y" ]] && ubuntuAddPackages
 
 installPackages $cacheonly
 if [[ "$cacheonly" == "Y" || "$dockeronly" == "Y" ]]; then exit 0; fi

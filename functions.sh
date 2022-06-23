@@ -226,10 +226,12 @@ function ubuntuAddPackages()
 }
 
 #Install PPA for node.js
-function installNodeRepository()
+function setupNodeRepository()
 {
 	#If node version is not specified, use system default repository...
-	if [ "$nodeVersion" == ""]; then return 0; fi
+	if [ "$nodeVersion" == "" ]; then return 0; fi
+	echo "Installing node.js version: $nodeVersion"
+
 	$nodeVersion="setup_$nodeVersion.x"
 	$url="https://deb.nodesource.com/$nodeVersion"
 
