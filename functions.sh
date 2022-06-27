@@ -212,7 +212,7 @@ function ubuntuAddPackages()
 	if [ "$skipLAMP" != "Y" ]; then	
 		packages="$packages php7.4 php7.4-mysql php7.4-xml php7.4-cli php-gd php-mbstring php-curl"
 		packages="$packages mysql-server-8.0 mysql-client-8.0 apache2 libapache2-mod-php7.4 php-zip"
-		packages="$packages npm php-memcached"
+		packages="$packages php-memcached"
 
 		# Set default password for MySQL so install script does not hang in the middle waiting for user input.
 		sudo debconf-set-selections <<< "mysql-server mysql-server/root_password select $dbpwd"
@@ -228,7 +228,8 @@ function ubuntuAddPackages()
 #Install PPA for node.js
 function setupNodeRepository()
 {
-	#If node version is not specified, use system default repository...
+	#If node version is not specified, use system default repository and just add npm
+	#If we add only npm after changing repository, we get dependency errors.
 	if [ "$nodeVersion" == "" ]; then
 		addPackages "npm"
 		return 0
@@ -236,11 +237,11 @@ function setupNodeRepository()
 
 	echo "Installing node.js version: $nodeVersion"
 
-	$nodeVersion="setup_$nodeVersion.x"
-	$url="https://deb.nodesource.com/$nodeVersion"
+	nodeVersion="setup_$nodeVersion.x"
+	url="https://deb.nodesource.com/$nodeVersion"
 
 	wget -q -O nodePrep.sh $url
-	if [ $_ != 0 ]; then
+	if [ $? != 0 ]; then
 		echo "Error setting up PPA for node.js, therefore surrender."
 		exit 1
 	fi
