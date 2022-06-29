@@ -448,9 +448,9 @@ function configureProjects()
 		#Now go to tip of production and get all dependencies
 		pushd $projectdir/dev > /dev/null
 		git checkout Production
-		composer install --no-dev > /dev/null 2>&1 & p1=$!
+		composer install --no-dev # > /dev/null 2>&1 # & p1=$!
 		cd $projectdir/dev/docroot/themes/custom/sdmc
-		configureNPM $projectdir/dev & p2=$!
+		configureNPM $projectdir/dev # & p2=$!
 		popd > /dev/null
 
 		#Now symlink the files directory to the files dir in the backup area:
@@ -458,8 +458,8 @@ function configureProjects()
 		[[ -d $filedir ]] && rmdir $filedir
 		ln -s $projectdir/backup/files $filedir
 
-		echo "Waiting for composer/npm processes to finish..."
-		wait $p1 $p2
+		#echo "Waiting for composer/npm processes to finish..."
+		#wait $p1 $p2
 	fi
 
 	#Just copy the repository for the stage/prod sites if they do not already exist
